@@ -1,111 +1,235 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  --bg-color: #f9f7f2; /* That off-white/cream background */
+  --text-main: #2d3436;
+  --text-muted: #636e72;
 }
 
 body {
+  background-color: var(--bg-color);
+  font-family: 'Inter', sans-serif;
   margin: 0;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
+.book-section {
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #3d4451;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.view-all {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #3498db;
+  text-transform: lowercase;
+  cursor: pointer;
+}
+
+
+.book-grid {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto; /* Allow horizontal scrolling if many books */
+  padding-bottom: 10px;
+}
+
+.book-card {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.cover-container img {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+
+}
+
+.plain-book-card {
+  width: 140px;
+  aspect-ratio: 2 / 3;
+  background-color: #ffffff; /* This ensures it's a white card */
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* The shadow from your design */
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-container img:hover {
+  transform: translateY(-4px);
+}
+
+.book-title {
+  font-size: 0.85rem;
+  margin: 8px 0 2px 0;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-author {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Layout Wrapper */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent the whole page from scrolling */
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 70px;
+  background-color: #ffffff;
+  border-right: 1px solid #ebebeb;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 0;
+  flex-shrink: 0; /* Prevents sidebar from squishing */
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.nav-item {
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: #324e6e; /* Blue highlight */
+}
+
+
+.app-container {
+  flex: 1; /* Takes up remaining space */
+  background-color: #fcfaf5; /* Cream background from screenshot */
+  padding: 40px 60px;
+  overflow-y: auto; /* Only the books area scrolls */
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  margin-bottom: 30px;
+  background-color: transparent; /* It blends with the cream background */
+}
+
+/* Search bar styling */
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #94a3b8;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  width: 300px;
+  color: #333;
+}
+
+/* Right side actions */
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+.notification-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444; /* Red dot */
+  border-radius: 50%;
+  border: 2px solid #fcfaf5;
+}
+
+/* Profile section */
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-pic {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.profile-name {
+  font-size: 14px;
   font-weight: 500;
-  color: var(--text-h);
+  color: #334155;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 50px;
+  
+  /* Use negative margins to pull it to the edges of the container */
+  margin: 40px -60px -40px -60px; 
+  
+  padding: 25px 0;
+  background-color: #5b7c99; /* The blue-gray from your image */
+  color: white;
+  font-size: 12px;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.footer-links a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.footer-copyright {
+  opacity: 0.9;
 }
