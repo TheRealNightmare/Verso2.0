@@ -455,3 +455,92 @@ body {
   color: #475569;
   text-transform: uppercase; /* To match your "AMAZING!!" style */
 }
+
+/* Container for the whole reader */
+.reading-page {
+  background-color: #fcfaf5; /* The cream/paper color from your screenshot */
+  min-height: calc(100vh - 80px);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Header with Back, Title, and Tools */
+.reading-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.chapter-info {
+  text-align: center;
+  flex: 1;
+}
+
+.chapter-info h3 {
+  font-size: 14px;
+  color: #2c3e50;
+  margin: 0;
+  font-weight: 700;
+}
+
+.chapter-info h2 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin: 5px 0;
+  font-weight: 800;
+}
+
+.reading-tools {
+  display: flex;
+  gap: 20px;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+/* The Main Book Area */
+.book-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  position: relative;
+  padding: 0 20px;
+}
+
+.dual-column-text {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Creates the two-column spread */
+  gap: 80px; /* Space between the two "pages" */
+  max-width: 900px;
+  margin: 0 auto;
+  line-height: 1.8;
+  color: #34495e;
+  font-size: 15px;
+  text-align: justify;
+}
+
+/* Navigation Arrows */
+.nav-arrow {
+  background: none;
+  border: none;
+  color: #2c3e50;
+  cursor: pointer;
+  padding: 10px;
+  transition: opacity 0.2s;
+}
+
+.nav-arrow:hover {
+  opacity: 0.6;
+}
+
+/* Page Number at the bottom center */
+.reading-footer {
+  text-align: center;
+  padding: 20px 0;
+  font-weight: 800;
+  color: #2c3e50;
+  font-size: 14px;
+}
