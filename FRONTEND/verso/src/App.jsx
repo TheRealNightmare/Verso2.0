@@ -1,24 +1,28 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import BookDetails from './pages/BookDetails'; // We will build this with your components
-
+import BookDetails from './pages/BookDetails'; 
+import ReadingPage from './pages/ReadingPage';
 function App() {
+
+  const location = useLocation();
+  const isReadingMode = location.pathname.startsWith('/read');
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="app-container">
-        <TopBar />
+       {!isReadingMode && <TopBar />}
         
-        {/* The URL determines which of these is visible */}
+    
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/book/:id" element={<BookDetails />} />
+          <Route path="/read/:id" element={<ReadingPage />} />
         </Routes>
 
-        <Footer />
+       {!isReadingMode && <Footer />}
       </main>
     </div>
   );
