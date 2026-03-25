@@ -1,28 +1,25 @@
-import BookSection from './components/BookSection';
+import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
-function App() {
-  const latestBooks = [
-    { id: 1, title: "Think Again", author: "Adam Grant", cover: "https://via.placeholder.com/150x225" },
-    { id: 2, title: "Mrs. Dalloway", author: "Virginia Woolf", cover: "https://via.placeholder.com/150x225" },
-    { id: 3, title: "The Great Gatsby", author: "F. Scott Fitzgerald", cover: "https://via.placeholder.com/150x225" },
-    { id: 4, title: "To Kill a Mockingbird", author: "Harper Lee", cover: "https://via.placeholder.com/150x225" },
-    { id: 5, title: "1984", author: "George Orwell", cover: "https://via.placeholder.com/150x225" },
-  ];
+import Home from './pages/Home';
+import BookDetails from './pages/BookDetails'; // We will build this with your components
 
+function App() {
   return (
     <div className="app-layout">
       <Sidebar />
-    <main className="app-container">
-      <TopBar />
-      <BookSection title="Latests" books={latestBooks} />
-      <BookSection title="Recommended Books" books={latestBooks} />
-      <BookSection title="Exclusive books" books={latestBooks} />
-      <BookSection title="Highly rated books" books={latestBooks} />
-      <BookSection title="Favorite books" books={latestBooks} />
-      <Footer />
-    </main>
+      <main className="app-container">
+        <TopBar />
+        
+        {/* The URL determines which of these is visible */}
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/book/:id" element={<BookDetails />} />
+        </Routes>
+
+        <Footer />
+      </main>
     </div>
   );
 }

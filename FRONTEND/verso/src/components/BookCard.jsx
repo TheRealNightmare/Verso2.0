@@ -1,12 +1,10 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 
-const BookCard = ({ cover, altText }) => {
+const BookCard = ({ id, cover }) => {
   return (
-    <div className="plain-book-card">
-      <div className="image-wrapper">
-        <img src={cover} alt={altText || "Book Cover"} />
-      </div>
-    </div>
+    <Link to={`/book/${id}`} className="plain-book-card">
+      <img src={cover} alt="Book" className="card-image" />
+    </Link>
   );
 };
 
