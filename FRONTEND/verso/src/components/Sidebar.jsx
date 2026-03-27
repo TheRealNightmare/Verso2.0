@@ -1,26 +1,27 @@
-import React from 'react';
-// Note: You can install lucide-react with: npm install lucide-react
-import { Home, History, Users, Grid, Calendar, Heart, MoreHorizontal } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, History, Download, Grid, Calendar, Users } from 'lucide-react';
 
 const Sidebar = () => {
+  const location = useLocation();
+
   return (
     <aside className="sidebar">
-      <div className="sidebar-top">
-        <div className="logo">📖</div>
-        <nav className="nav-menu">
-          <Home className="nav-item active" size={22} />
-          <History className="nav-item" size={22} />
-          <Users className="nav-item" size={22} />
-          <Grid className="nav-item" size={22} />
-          <Calendar className="nav-item" size={22} />
-          <Heart className="nav-item" size={22} />
-        </nav>
-      </div>
+      <div className="logo-section">📖</div>
       
-      <div className="sidebar-bottom">
-        <MoreHorizontal className="nav-item" size={22} />
-        <Users className="nav-item" size={22} /> {/* Settings/Profile icon */}
-      </div>
+      <nav className="nav-icons">
+        <Link to="/">
+          <Home className={`icon ${location.pathname === '/' ? 'active' : ''}`} size={24} />
+        </Link>
+
+        <Link to="/history">
+          <History className={`icon ${location.pathname === '/history' ? 'active' : ''}`} size={24} />
+        </Link>
+
+        <Download className="icon" size={24} />
+        <Grid className="icon" size={24} />
+        <Calendar className="icon" size={24} />
+        <Users className="icon" size={24} />
+      </nav>
     </aside>
   );
 };

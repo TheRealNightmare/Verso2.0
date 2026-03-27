@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import BookDetails from './pages/BookDetails'; 
 import ReadingPage from './pages/ReadingPage';
+import History from './pages/History';
+
 function App() {
 
   const location = useLocation();
@@ -20,6 +22,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/book/:id" element={<BookDetails />} />
           <Route path="/read/:id" element={<ReadingPage />} />
+          <Route path="/history" element={<History />} />
         </Routes>
 
        {!isReadingMode && <Footer />}

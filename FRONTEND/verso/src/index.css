@@ -131,6 +131,7 @@ body {
   overflow-y: auto; /* Only the books area scrolls */
 }
 
+
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -377,7 +378,42 @@ body {
   transform: scale(1.1);
 }
 
-/* Review Styles */
+.nav-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 35px; /* Spacing between icons */
+  margin-top: 50px;
+}
+
+/* Base style for all icons */
+.icon {
+  color: #5b7c99; /* The blueish-gray from your image */
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+/* The Blue Square Active State */
+.icon.active {
+  background-color: #5b7c99; /* The solid blue background */
+  color: #ffffff; /* White house icon */
+  box-shadow: 0 4px 10px rgba(91, 124, 153, 0.3);
+}
+
+/* Hover effect for inactive icons */
+.icon:not(.active):hover {
+  background-color: #f0f4f8;
+  color: #3b82f6;
+}
+
+.icon:hover {
+  color: #3b82f6;
+  transform: scale(1.1);
+}
+
+
 .review-row {
   display: flex;
   align-items: center;
@@ -456,15 +492,6 @@ body {
   text-transform: uppercase; /* To match your "AMAZING!!" style */
 }
 
-/* Container for the whole reader */
-.reading-page {
-  background-color: #fcfaf5; /* The cream/paper color from your screenshot */
-  min-height: calc(100vh - 80px);
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
 
 /* Header with Back, Title, and Tools */
 .reading-header {
@@ -543,4 +570,158 @@ body {
   font-weight: 800;
   color: #2c3e50;
   font-size: 14px;
+}
+
+/* Wrapper to hold both the reader and the sidebar */
+.reading-layout-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.reading-page {
+  flex: 1;
+  transition: all 0.3s ease;
+  background-color: #fcfaf5;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The Blue Sidebar */
+.annotations-sidebar {
+  width: 300px;
+  background-color: #d6e6f2; /* The blue color from your image */
+  height: 100vh;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.sidebar-icons-top {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.sidebar-title {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
+}
+
+.annotation-item {
+  font-size: 12px;
+  color: #34495e;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.annotation-item:hover {
+  text-decoration: underline;
+}
+
+.tool-active {
+  color: #3b82f6; /* Optional: highlight the icon when open */
+}
+
+.history-page {
+  padding: 20px 0;
+}
+
+.history-title {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 30px;
+  font-weight: 700;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.history-item-card {
+  display: flex;
+  gap: 30px;
+  position: relative;
+  align-items: flex-start;
+}
+
+.history-cover {
+  width: 130px;
+  height: 190px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.history-info {
+  flex: 1;
+}
+
+.history-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.history-info .book-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.remove-icon {
+  color: #1e293b;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.remove-icon:hover {
+  color: #ef4444; /* Turns red on hover */
+}
+
+.read-btn-small {
+  background-color: #6a89a7;
+  color: white;
+  border: none;
+  padding: 8px 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 20px;
+}
+
+.history-timestamp {
+  font-size: 13px;
+  color: #475569;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
 }
