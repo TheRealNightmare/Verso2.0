@@ -17,6 +17,14 @@ const Sidebar = () => {
           <History className={`icon ${location.pathname === '/history' ? 'active' : ''}`} size={24} />
         </Link>
 
+        {/* Sidebar.jsx snippet */}
+<Link to="/storage">
+  <Download 
+    className={`icon ${location.pathname === '/storage' ? 'active' : ''}`} 
+    size={24} 
+  />
+</Link>
+
         <Download className="icon" size={24} />
         <Grid className="icon" size={24} />
         <Calendar className="icon" size={24} />

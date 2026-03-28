@@ -85,25 +85,34 @@ body {
   margin: 0;
 }
 
-/* Layout Wrapper */
-.app-layout {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden; /* Prevent the whole page from scrolling */
+
+.sidebar {
+  width: 80px; /* Or whatever your sidebar width is */
+  flex-shrink: 0;
+  /* Remove position: fixed if you have it, or ensure it's not breaking the flow */
 }
 
-/* Sidebar Styling */
-.sidebar {
-  width: 70px;
-  background-color: #ffffff;
-  border-right: 1px solid #ebebeb;
+.app-layout {
+  display: flex; /* Keeps sidebar and main content side-by-side */
+}
+
+.app-container {
+  flex: 1; /* Makes the right side take all remaining space */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  padding: 25px 0;
-  flex-shrink: 0; /* Prevents sidebar from squishing */
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1; /* Pushes footer to bottom */
+}
+
+.footer {
+  width: 100%;
+  background-color: #5b7c99; /* Your footer blue */
+  padding: 15px 40px;
+  color: white;
+  /* Remove 'position: absolute' or 'left: 0' if they exist! */
 }
 
 .nav-menu {
@@ -121,14 +130,6 @@ body {
 
 .nav-item:hover, .nav-item.active {
   color: #324e6e; /* Blue highlight */
-}
-
-
-.app-container {
-  flex: 1; /* Takes up remaining space */
-  background-color: #fcfaf5; /* Cream background from screenshot */
-  padding: 40px 60px;
-  overflow-y: auto; /* Only the books area scrolls */
 }
 
 
@@ -724,4 +725,62 @@ body {
   display: flex;
   align-items: center;
   margin-top: 20px;
+}
+
+.storage-page {
+  padding: 20px 0;
+}
+
+.storage-title {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 800;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+}
+
+.storage-grid {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.storage-item {
+  width: 150px; /* Matching the cover width */
+  cursor: pointer;
+}
+
+.storage-cover-wrapper {
+  width: 150px;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
+  transition: transform 0.2s;
+}
+
+.storage-cover-wrapper:hover {
+  transform: translateY(-5px);
+}
+
+.storage-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.storage-info .book-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.storage-info .book-author {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  font-style: italic;
+  margin: 4px 0 0 0;
 }
