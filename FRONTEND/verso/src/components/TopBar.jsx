@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Bell } from 'lucide-react';
 
 const TopBar = () => {
@@ -20,6 +21,11 @@ const TopBar = () => {
           <Bell size={20} />
           <span className="notification-dot"></span>
         </button>
+
+        <div className="auth-shortcuts">
+          <Link to="/login" className="auth-shortcut-link">Log in</Link>
+          <Link to="/register" className="auth-shortcut-link auth-shortcut-primary">Register</Link>
+        </div>
         
         <div className="profile-section">
           <img 
