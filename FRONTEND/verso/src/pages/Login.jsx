@@ -10,8 +10,6 @@ const Login = () => {
     navigate('/');
   };
 
-  
-
   return (
     <div className="login-container">
       <div className="login-card">
@@ -68,7 +66,7 @@ const Login = () => {
         </form>
 
         <p className="register-text">
-          Dont have an account? <a href="#">Register</a>
+          Dont have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>
