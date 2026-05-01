@@ -962,3 +962,223 @@ body {
     font-size: 24px;
   }
 }
+.login-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fcfaf5;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  padding: 20px;
+}
+
+.login-logo {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #5b7c99;
+  margin-bottom: 30px;
+}
+
+.google-login {
+  width: 100%;
+  padding: 10px;
+  border: 1.5px solid #d1d5db;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.divider {
+  margin: 25px 0;
+  position: relative;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.divider span {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fcfaf5;
+  padding: 0 10px;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.input-group {
+  text-align: left;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #5b7c99;
+  margin-bottom: 5px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #b9d1e4;
+  background-color: #d6e6f2; /* Light blue input background */
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5b7c99;
+}
+
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 20px;
+  color: #5b7c99;
+  font-weight: 600;
+}
+
+.login-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background-color: #5b7c99;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(91, 124, 153, 0.3);
+}
+
+.register-text {
+  margin-top: 20px;
+  font-size: 12px;
+  color: #5b7c99;
+  font-weight: 700;
+}
+
+.register-text a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+/* Fix the Logo Icon */
+.login-logo-wrapper {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-icon {
+  color: #2c3e50; /* Dark blue color from your design */
+  stroke-width: 1.5px; /* Makes it look like a clean outline book */
+}
+
+/* Fix the Google Image size */
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Ensure the Google button looks clean */
+.google-login {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.google-login:hover {
+  background-color: #f9fafb;
+}
+
+/* Registration Specific Styles */
+.reg-undo-wrapper {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.undo-icon {
+  color: #5b7c99;
+  cursor: pointer;
+  border: 2px solid #5b7c99;
+  border-radius: 8px;
+  padding: 4px;
+  transition: transform 0.2s;
+}
+
+.undo-icon:hover {
+  transform: scale(1.1);
+}
+
+.reg-title {
+  text-align: left;
+  margin-bottom: 5px;
+}
+
+.reg-subtitle {
+  text-align: left;
+  font-size: 14px;
+  color: #5b7c99;
+  font-style: italic;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
+
+.auth-error-msg {
+  color: #ef4444;
+  font-size: 12px;
+  margin-bottom: 15px;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Ensure the Link at the bottom is lowercase as per screenshot */
+.register-text {
+  text-transform: lowercase;
+}
+
+
+
+
+
+
+
+
+
+
+
