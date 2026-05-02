@@ -1,60 +1,81 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import ReviewComponent from '../components/ReviewComponent';
 import BookInfoStats from '../components/BookInfoStats';
+import { fetchHistory, deleteHistory } from '../api/history';
 
 const History = () => {
-  // Initialize state with your book data
-  const [historyBooks, setHistoryBooks] = useState([
-    { id: 1, title: "DANH NHAN VAT LY", author: "Lorem", genre: "Romance", producer: "Updating", status: "25/50", date: "8/18/13 06:13 PM", type: "Read", cover: "https://via.placeholder.com/120x180" },
-    { id: 2, title: "Treasure Island", author: "Lorem", genre: "Romance", producer: "Updating", status: "25/50", date: "8/16/13 06:13 PM", type: "Save", cover: "https://via.placeholder.com/120x180" },
-    { id: 3, title: "THE SUN ALSO RISES", author: "Lorem", genre: "Romance", producer: "Updating", status: "25/50", date: "8/15/13 06:13 PM", type: "Favourite", cover: "https://via.placeholder.com/120x180" },
-  ]);
+  const navigate = useNavigate();
+  const [historyBooks, setHistoryBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Function to remove a book from the list
-  const removeBook = (id) => {
-    setHistoryBooks(historyBooks.filter(book => book.id !== id));
+  useEffect(() => {
+    fetchHistory()
+      .then(setHistoryBooks)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const removeBook = async (id) => {
+    try {
+      await deleteHistory(id);
+      setHistoryBooks((prev) => prev.filter((entry) => entry.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  if (loading) return <p style={{ padding: '2rem', color: '#aaa' }}>Loading history...</p>;
 
   return (
     <div className="history-page">
       <h2 className="history-title">HISTORY</h2>
-      
-      <div className="history-list">
-        {historyBooks.map((book) => (
-          <div key={book.id} className="history-item-container">
-            <div className="history-item-card">
-              <img src={book.cover} alt={book.title} className="history-cover" />
-              
-              <div className="history-info">
-                <div className="history-header-row">
-                  <h3 className="book-title">{book.title}</h3>
-                  <X 
-                    className="remove-icon" 
-                    size={24} 
-                    onClick={() => removeBook(book.id)} 
-                  />
-                </div>
 
-                <ReviewComponent rating={4} count={1} />
-                
-                <BookInfoStats 
-                  author={book.author} 
-                  genre={book.genre} 
-                  producer={book.producer} 
-                  status={book.status} 
+      {historyBooks.length === 0 && (
+        <p style={{ color: '#aaa', padding: '1rem' }}>No reading history yet.</p>
+      )}
+
+      <div className="history-list">
+        {historyBooks.map((entry) => {
+          const book = entry.book;
+          return (
+            <div key={entry.id} className="history-item-container">
+              <div className="history-item-card">
+                <img
+                  src={book?.cover_image_url || 'https://via.placeholder.com/120x180'}
+                  alt={book?.title}
+                  className="history-cover"
                 />
 
-                <div className="history-actions">
-                  <button className="read-btn-small">Read</button>
-                  <span className="history-timestamp">
-                    {book.type}: <strong>{book.date}</strong>
-                  </span>
+                <div className="history-info">
+                  <div className="history-header-row">
+                    <h3 className="book-title">{book?.title}</h3>
+                    <X className="remove-icon" size={24} onClick={() => removeBook(entry.id)} />
+                  </div>
+
+                  <ReviewComponent rating={Math.round(book?.average_rating ?? 0)} count={0} />
+
+                  <BookInfoStats
+                    author={book?.author}
+                    genre={book?.genre || 'Literature'}
+                    producer="Project Gutenberg"
+                    status={`${entry.progress}%`}
+                  />
+
+                  <div className="history-actions">
+                    <button className="read-btn-small" onClick={() => navigate(`/read/${book?.id}`)}>
+                      Read
+                    </button>
+                    <span className="history-timestamp">
+                      Last read: <strong>{new Date(entry.last_read_at).toLocaleString()}</strong>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

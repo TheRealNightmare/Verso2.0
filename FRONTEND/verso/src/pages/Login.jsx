@@ -1,35 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { BookOpen, EyeOff } from 'lucide-react';
 
 const Login = () => {
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    navigate('/');
+    setError('');
+    setLoading(true);
+
+    try {
+      await login({ email, password });
+      navigate('/');
+    } catch (err) {
+      setError(err.message || 'Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
       <div className="login-card">
-        
+
         <div className="login-logo-wrapper">
-          <BookOpen 
-            size={80} 
-            color="#5b7c99"    /* The dark blue color */
-            strokeWidth={1}    /* This makes the lines thick like your logo */
-            /* Do NOT use fill if you want the pages to stay white/transparent */
+          <BookOpen
+            size={80}
+            color="#5b7c99"
+            strokeWidth={1}
           />
         </div>
-        
+
         <h1 className="login-title">Welcome book worm</h1>
 
-        {/* FIX: Use a reliable Google Icon URL */}
         <button className="google-login">
-          <img 
-            src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" 
-            alt="Google" 
+          <img
+            src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+            alt="Google"
             className="google-icon"
           />
           Log in using Google
@@ -39,16 +54,29 @@ const Login = () => {
           <span>Or</span>
         </div>
 
+        {error && <p className="auth-error-msg">{error}</p>}
+
         <form onSubmit={handleLogin}>
           <div className="input-group">
             <label>Email</label>
-            <input type="email" placeholder="email@example.com" required />
+            <input
+              type="email"
+              placeholder="email@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
 
           <div className="input-group">
             <label>Password</label>
             <div className="password-wrapper">
-              <input type="password" required />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
               <EyeOff size={18} className="eye-icon" />
             </div>
           </div>
@@ -60,8 +88,8 @@ const Login = () => {
             <a href="#" className="forgot-link">Forgot password?</a>
           </div>
 
-          <button type="submit" className="login-submit-btn">
-            Start your Journey
+          <button type="submit" className="login-submit-btn" disabled={loading}>
+            {loading ? 'Logging in...' : 'Start your Journey'}
           </button>
         </form>
 

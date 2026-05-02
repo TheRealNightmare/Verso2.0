@@ -29,12 +29,10 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    if (token) {
-      try {
-        await logoutUser(token);
-      } catch (_) {
-        // proceed with local logout even if server call fails
-      }
+    try {
+      await logoutUser();
+    } catch (_) {
+      // proceed with local logout even if server call fails
     }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');

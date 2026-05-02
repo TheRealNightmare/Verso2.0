@@ -1,10 +1,12 @@
 const BASE_URL = import.meta.env.VITE_API_URL;
 
-async function apiFetch(endpoint, options = {}) {
+export async function apiFetch(endpoint, options = {}) {
+  const token = localStorage.getItem('auth_token');
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
@@ -33,11 +35,6 @@ export async function loginUser({ email, password }) {
   });
 }
 
-export async function logoutUser(token) {
-  return apiFetch('/logout', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export async function logoutUser() {
+  return apiFetch('/logout', { method: 'POST' });
 }

@@ -11,11 +11,12 @@ const BookSection = ({ title, books }) => {
       </div>
       <div className="book-grid">
         {books.map((book) => (
-          <BookCard 
-            key={book.id} 
-            title={book.title} 
-            author={book.author} 
-            cover={book.cover} 
+          <BookCard
+            key={book.id}
+            id={book.id}
+            title={book.title}
+            author={book.author}
+            cover={book.cover}
           />
         ))}
       </div>
