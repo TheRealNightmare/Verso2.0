@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { EyeOff, Undo2 } from 'lucide-react';
 
 function Register() {
   const { register } = useAuth();
@@ -9,82 +10,121 @@ function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event) {
-    event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault(); // Prevents page reload
     setError('');
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Ensure backend dev's register function receives the right object keys
       await register({ name, email, password });
-      navigate('/');
+      navigate('/'); 
     } catch (err) {
+      console.error("Registration Error:", err);
       if (err.errors) {
         const firstError = Object.values(err.errors)[0];
         setError(Array.isArray(firstError) ? firstError[0] : firstError);
       } else {
-        setError(err.message ?? 'Registration failed. Please try again.');
+        setError(err.message || 'Registration failed. Please try again.');
       }
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <section className="auth-page">
-      <div className="auth-card">
-        <p className="auth-eyebrow">Get started</p>
-        <h1 className="auth-title">Create account</h1>
-        <p className="auth-subtitle">Be a worm</p>
-
-        {error && <p className="auth-error">{error}</p>}
-
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="register-name" className="auth-label">Full name</label>
-          <input
-            id="register-name"
-            type="text"
-            placeholder="Peter Parker"
-            className="auth-input"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+    <div className="login-container">
+      <div className="login-card reg-card">
+        
+        {/* Top Undo Icon */}
+        <div className="reg-undo-wrapper">
+          <Undo2 
+            size={32} 
+            className="undo-icon" 
+            onClick={() => navigate('/login')} 
           />
+        </div>
 
-          <label htmlFor="register-email" className="auth-label">Email</label>
-          <input
-            id="register-email"
-            type="email"
-            placeholder="you@example.com"
-            className="auth-input"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+        <h1 className="reg-title">Registration</h1>
+        <p className="reg-subtitle">Be a worm</p>
 
-          <label htmlFor="register-password" className="auth-label">Password</label>
-          <input
-            id="register-password"
-            type="password"
-            placeholder="Create a password"
-            className="auth-input"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        {error && <p className="auth-error-msg">{error}</p>}
 
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Creating account...' : 'Create Account'}
+        <form onSubmit={handleSubmit} className="auth-form-wrapper">
+          <div className="input-group">
+            <label>Username</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Username"
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Password</label>
+            <div className="password-wrapper">
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+              />
+              <EyeOff size={18} className="eye-icon" />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Confirm Password</label>
+            <div className="password-wrapper">
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm Password"
+              />
+              <EyeOff size={18} className="eye-icon" />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            className="login-submit-btn" 
+            disabled={loading}
+          >
+            {loading ? 'Signing up...' : 'Sign up'}
           </button>
         </form>
 
-        <p className="auth-switch-text">
-          Already have an account? <Link to="/login" className="auth-switch-link">Sign in</Link>
+        <p className="register-text">
+          already have an account? <Link to="/login">Signup</Link>
         </p>
       </div>
-    </section>
+    </div>
   );
 }
 

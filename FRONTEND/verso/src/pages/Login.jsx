@@ -1,74 +1,76 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { BookOpen, EyeOff } from 'lucide-react';
 
-function Login() {
-  const { login } = useAuth();
+const Login = () => {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login({ email, password });
-      navigate('/');
-    } catch (err) {
-      setError(err.message ?? 'Login failed. Please check your credentials.');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleLogin = (e) => {
+    e.preventDefault();
+    navigate('/');
+  };
 
   return (
-    <section className="auth-page">
-      <div className="auth-card">
-
-        <h1 className="auth-title">Welcome Book Worm</h1>
-        <p className="auth-subtitle">Log in to your account</p>
-
-        {error && <p className="auth-error">{error}</p>}
-
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="login-email" className="auth-label">Email</label>
-          <input
-            id="login-email"
-            type="email"
-            placeholder="you@example.com"
-            className="auth-input"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+    <div className="login-container">
+      <div className="login-card">
+        
+        <div className="login-logo-wrapper">
+          <BookOpen 
+            size={80} 
+            color="#5b7c99"    /* The dark blue color */
+            strokeWidth={1}    /* This makes the lines thick like your logo */
+            /* Do NOT use fill if you want the pages to stay white/transparent */
           />
+        </div>
+        
+        <h1 className="login-title">Welcome book worm</h1>
 
-          <label htmlFor="login-password" className="auth-label">Password</label>
-          <input
-            id="login-password"
-            type="password"
-            placeholder="Enter your password"
-            className="auth-input"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+        {/* FIX: Use a reliable Google Icon URL */}
+        <button className="google-login">
+          <img 
+            src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" 
+            alt="Google" 
+            className="google-icon"
           />
+          Log in using Google
+        </button>
 
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Log In'}
+        <div className="divider">
+          <span>Or</span>
+        </div>
+
+        <form onSubmit={handleLogin}>
+          <div className="input-group">
+            <label>Email</label>
+            <input type="email" placeholder="email@example.com" required />
+          </div>
+
+          <div className="input-group">
+            <label>Password</label>
+            <div className="password-wrapper">
+              <input type="password" required />
+              <EyeOff size={18} className="eye-icon" />
+            </div>
+          </div>
+
+          <div className="login-options">
+            <label className="remember-me">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" className="forgot-link">Forgot password?</a>
+          </div>
+
+          <button type="submit" className="login-submit-btn">
+            Start your Journey
           </button>
         </form>
 
-        <p className="auth-switch-text">
-          New here? <Link to="/register" className="auth-switch-link">Create an account</Link>
+        <p className="register-text">
+          Dont have an account? <Link to="/register">Register</Link>
         </p>
       </div>
-    </section>
+    </div>
   );
-}
+};
 
 export default Login;
