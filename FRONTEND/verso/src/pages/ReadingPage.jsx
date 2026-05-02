@@ -30,7 +30,9 @@ const ReadingPage = () => {
     fetchBookContent(id)
       .then((data) => {
         setBookData(data);
-        setPages(splitPages(data.content || ''));
+        const pgs = splitPages(data.content || '');
+        setPages(pgs);
+        saveHistory(id, Math.round((1 / (pgs.length || 1)) * 100)).catch(() => {});
       })
       .catch(console.error)
       .finally(() => setLoading(false));

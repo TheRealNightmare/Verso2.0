@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { EyeOff, Undo2 } from 'lucide-react';
+import { Eye, EyeOff, Undo2 } from 'lucide-react';
 
 function Register() {
   const { register } = useAuth();
@@ -13,6 +13,8 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault(); // Prevents page reload
@@ -87,13 +89,16 @@ function Register() {
             <label>Password</label>
             <div className="password-wrapper">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
               />
-              <EyeOff size={18} className="eye-icon" />
+              {showPassword
+                ? <Eye size={18} className="eye-icon" onClick={() => setShowPassword(false)} />
+                : <EyeOff size={18} className="eye-icon" onClick={() => setShowPassword(true)} />
+              }
             </div>
           </div>
 
@@ -101,13 +106,16 @@ function Register() {
             <label>Confirm Password</label>
             <div className="password-wrapper">
               <input
-                type="password"
+                type={showConfirmPassword ? 'text' : 'password'}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
               />
-              <EyeOff size={18} className="eye-icon" />
+              {showConfirmPassword
+                ? <Eye size={18} className="eye-icon" onClick={() => setShowConfirmPassword(false)} />
+                : <EyeOff size={18} className="eye-icon" onClick={() => setShowConfirmPassword(true)} />
+              }
             </div>
           </div>
 
