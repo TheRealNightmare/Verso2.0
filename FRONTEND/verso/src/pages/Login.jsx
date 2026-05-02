@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, EyeOff } from 'lucide-react';
+import { BookOpen, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const { login } = useAuth();
@@ -11,6 +11,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -72,12 +73,15 @@ const Login = () => {
             <label>Password</label>
             <div className="password-wrapper">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <EyeOff size={18} className="eye-icon" />
+              {showPassword
+                ? <Eye size={18} className="eye-icon" onClick={() => setShowPassword(false)} />
+                : <EyeOff size={18} className="eye-icon" onClick={() => setShowPassword(true)} />
+              }
             </div>
           </div>
 
