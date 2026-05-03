@@ -8,21 +8,20 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="logo-section">
-        <BookOpen 
-          size={32}           /* Smaller size for sidebar compared to login page */
-          color="#2c3e50"     /* Matches the navy blue in Screenshot 2026-05-01 201803.png */
-          fill="#2c3e50"      /* Fills the icon as seen in your reference image */
-          strokeWidth={1.5}   /* Creates the white 'page' gaps */
-        />
+      <BookOpen
+                  size={50}
+                  color="#5b7c99"
+                  strokeWidth={1}
+                />
       </div>
       
       <nav className="nav-icons">
-        {/* HOME */}
+     
         <Link to="/">
           <Home className={`icon ${location.pathname === '/' ? 'active' : ''}`} size={24} />
         </Link>
 
-        {/* HISTORY */}
+       
         <Link to="/history">
           <History className={`icon ${location.pathname === '/history' ? 'active' : ''}`} size={24} />
         </Link>
