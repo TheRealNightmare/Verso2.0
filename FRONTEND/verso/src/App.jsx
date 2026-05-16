@@ -10,6 +10,11 @@ import History from './pages/History';
 import Storage from './pages/Storage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/dashboard';
+import UserProfile from './pages/profile';
+import Event from './pages/event';
+import EventCreate from './pages/eventcreate';
+import Community from './pages/friends';
 
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
@@ -23,6 +28,7 @@ function AppContent() {
 
   const appRoutes = (
     <Routes>
+      <BrowserRouter>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
@@ -30,6 +36,16 @@ function AppContent() {
       <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+      <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
+      <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
+      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+
+
+
+  </BrowserRouter>
+
     </Routes>
   );
 
@@ -53,6 +69,7 @@ function AppContent() {
 
 function App() {
   return (
+
     <AuthProvider>
       <AppContent />
     </AuthProvider>
