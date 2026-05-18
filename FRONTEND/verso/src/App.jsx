@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
@@ -16,11 +16,6 @@ import Event from './pages/Event';
 import EventCreate from './pages/EventCreate';
 import Community from './pages/Community';
 
-function ProtectedRoute({ children }) {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" replace />;
-}
-
 function AppContent() {
   const location = useLocation();
   const isReadingMode = location.pathname.startsWith('/read');
@@ -28,16 +23,16 @@ function AppContent() {
 
   const appRoutes = (
     <Routes>
-      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
-      <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
-      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
-      <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-      <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
-      <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
+      <Route path="/" element={<Home />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/events" element={<Event />} />
+      <Route path="/create-event" element={<EventCreate />} />
+      <Route path="/community" element={<Community />} />
+      <Route path="/book/:id" element={<BookDetails />} />
+      <Route path="/history" element={<History />} />
+      <Route path="/storage" element={<Storage />} />
+      <Route path="/read/:id" element={<ReadingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="*" element={<Navigate to="/" replace />} />
