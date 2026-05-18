@@ -1,42 +1,81 @@
+import { Eye, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import StatCard from '../components/dashboard/StatCard';
+import HoursSpentChart from '../components/dashboard/HoursSpentChart';
+import PerformanceGauge from '../components/dashboard/PerformanceGauge';
+import WormProgress from '../components/dashboard/WormProgress';
+import LeaderBoard from '../components/dashboard/LeaderBoard';
+import ProfileCard from '../components/dashboard/ProfileCard';
+import MiniCalendar from '../components/dashboard/MiniCalendar';
+import TodoList from '../components/dashboard/TodoList';
+import { dashboardStats } from '../mocks/dashboard';
+
 const Dashboard = () => {
+  const { user } = useAuth();
+  const displayName = user?.name || 'Peter';
+
+  const handleStatAction = (label) => {
+    console.log('stat card clicked:', label);
+  };
+
   return (
-    <div className="min-h-full">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Hello, Peter 👋</h1>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white p-5 rounded-xl shadow-sm">
-          <h3 className="text-sm text-slate-500">Total Books</h3>
-          <p className="text-2xl font-bold text-slate-800 mt-2">5000</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm">
-          <h3 className="text-sm text-slate-500">Completed</h3>
-          <p className="text-2xl font-bold text-slate-800 mt-2">68</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm">
-          <h3 className="text-sm text-slate-500">Quiz Score</h3>
-          <p className="text-2xl font-bold text-slate-800 mt-2">92%</p>
-        </div>
-        <div className="bg-white p-5 rounded-xl shadow-sm">
-          <h3 className="text-sm text-slate-500">Lessons</h3>
-          <p className="text-2xl font-bold text-slate-800 mt-2">12</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-5 mt-8">
-        <div className="flex-1 bg-white p-5 rounded-xl shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Hours Spent</h2>
-          <div className="h-52 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300" />
+    <div className="flex flex-col lg:flex-row gap-6">
+      <section className="flex-1 min-w-0 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1e3a5f]">
+            Hello, {displayName} <span aria-hidden>👋</span>
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Let's read something new today!
+          </p>
         </div>
 
-        <div className="flex-1 bg-white p-5 rounded-xl shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800 mb-4">Performance</h2>
-          <div className="w-32 h-32 rounded-full bg-[#4f83cc] text-white flex items-center justify-center text-2xl font-semibold mx-auto my-4">
-            75%
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Book"
+            value={dashboardStats.totalBooks}
+            icon={Eye}
+            onAction={handleStatAction}
+          />
+          <StatCard
+            label="Completed"
+            value={dashboardStats.completed}
+            icon={Clock}
+            onAction={handleStatAction}
+          />
+          <StatCard
+            label="Quiz Score"
+            value={dashboardStats.quizScore}
+            icon={Clock}
+            onAction={handleStatAction}
+          />
+          <StatCard
+            label="Lesson"
+            value={dashboardStats.lessons}
+            icon={Clock}
+            onAction={handleStatAction}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <HoursSpentChart />
+          </div>
+          <div className="space-y-4">
+            <PerformanceGauge />
           </div>
         </div>
-      </div>
+
+        <WormProgress />
+
+        <LeaderBoard />
+      </section>
+
+      <aside className="w-full lg:w-[300px] flex-shrink-0 space-y-4">
+        <ProfileCard name={displayName} />
+        <MiniCalendar />
+        <TodoList />
+      </aside>
     </div>
   );
 };
