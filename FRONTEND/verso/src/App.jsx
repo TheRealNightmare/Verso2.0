@@ -16,6 +16,7 @@ import Event from './pages/event';
 import EventCreate from './pages/eventcreate';
 import Community from './pages/friends';
 
+
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
   return token ? children : <Navigate to="/login" replace />;
@@ -27,6 +28,7 @@ function AppContent() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const appRoutes = (
+    <BrowserRouter>
     <Routes>
       <BrowserRouter>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -36,17 +38,13 @@ function AppContent() {
       <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-      <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
-      <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
-      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
-
-
-
-  </BrowserRouter>
-
-    </Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/events" element={<Event />} />
+        <Route path="/create-event" element={<EventCreate />} />
+        <Route path="/community" element={<Community />} />
+      </Routes>
+    </BrowserRouter>
   );
 
   if (isAuthPage) {
