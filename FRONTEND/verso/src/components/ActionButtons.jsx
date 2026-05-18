@@ -38,21 +38,30 @@ const ActionButtons = ({ bookId: propBookId, isBookmarked: initBookmarked = fals
   };
 
   return (
-    <div className="action-row">
-      <button className="read-btn" onClick={handleReadClick}>
+    <div className="flex items-center gap-3 my-4">
+      <button
+        onClick={handleReadClick}
+        className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#5b7c99] text-white hover:bg-[#4a6a85] transition-colors"
+      >
         <BookOpen size={18} /> Read
       </button>
 
-      <div className="icon-actions">
-        <button className="action-icon-btn" onClick={handleSaveClick}>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleSaveClick}
+          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+        >
           <Bookmark size={20} fill={bookmarked ? '#5b7c99' : 'none'} stroke={bookmarked ? '#5b7c99' : 'currentColor'} />
         </button>
 
-        <button className="action-icon-btn" onClick={handleFavoriteClick}>
+        <button
+          onClick={handleFavoriteClick}
+          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+        >
           <Heart size={20} fill={favorited ? '#e74c3c' : 'none'} stroke={favorited ? '#e74c3c' : 'currentColor'} />
         </button>
 
-        <button className="action-icon-btn">
+        <button className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">
           <Share2 size={20} />
         </button>
       </div>

@@ -2,53 +2,39 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, Home, History, Download, Grid, Calendar, Users } from 'lucide-react';
 
+const navItems = [
+  { to: '/', icon: Home, match: (p) => p === '/' },
+  { to: '/history', icon: History, match: (p) => p === '/history' },
+  { to: '/storage', icon: Download, match: (p) => p === '/storage' },
+  { to: '/dashboard', icon: Grid, match: (p) => p === '/dashboard' },
+  { to: '/events', icon: Calendar, match: (p) => p.startsWith('/events') || p === '/create-event' },
+  { to: '/community', icon: Users, match: (p) => p === '/community' },
+];
+
 const Sidebar = () => {
   const location = useLocation();
 
   return (
-    <aside className="sidebar">
-      <div className="logo-section">
-        <BookOpen 
-          size={32}           /* Smaller size for sidebar compared to login page */
-          color="#2c3e50"     /* Matches the navy blue in Screenshot 2026-05-01 201803.png */
-          fill="#2c3e50"      /* Fills the icon as seen in your reference image */
-          strokeWidth={1.5}   /* Creates the white 'page' gaps */
-        />
+    <aside className="w-20 bg-white border-r border-slate-200 flex flex-col items-center py-6 gap-8 shrink-0">
+      <div className="flex items-center justify-center">
+        <BookOpen size={32} color="#2c3e50" fill="#2c3e50" strokeWidth={1.5} />
       </div>
-      
-      <nav className="nav-icons">
-        {/* HOME */}
-        <Link to="/">
-          <Home className={`icon ${location.pathname === '/' ? 'active' : ''}`} size={24} />
-        </Link>
 
-        {/* HISTORY */}
-        <Link to="/history">
-          <History className={`icon ${location.pathname === '/history' ? 'active' : ''}`} size={24} />
-        </Link>
-
-        {/* STORAGE (Make sure there is ONLY ONE of these) */}
-        <Link to="/storage">
-          <Download 
-            className={`icon ${location.pathname === '/storage' ? 'active' : ''}`} 
-            size={24} 
-          />
-        </Link>
-
-        {/* DASHBOARD */}
-        <Link to="/dashboard">
-          <Grid className={`icon ${location.pathname === '/dashboard' ? 'active' : ''}`} size={24} />
-        </Link>
-
-        {/* EVENTS */}
-        <Link to="/events">
-          <Calendar className={`icon ${location.pathname.startsWith('/events') || location.pathname === '/create-event' ? 'active' : ''}`} size={24} />
-        </Link>
-
-        {/* COMMUNITY */}
-        <Link to="/community">
-          <Users className={`icon ${location.pathname === '/community' ? 'active' : ''}`} size={24} />
-        </Link>
+      <nav className="flex flex-col items-center gap-6">
+        {navItems.map(({ to, icon: Icon, match }) => {
+          const active = match(location.pathname);
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
+                active ? 'bg-[#5b7c99]/10 text-[#5b7c99]' : 'text-slate-500 hover:text-[#5b7c99] hover:bg-slate-100'
+              }`}
+            >
+              <Icon size={22} />
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );

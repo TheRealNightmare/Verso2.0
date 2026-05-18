@@ -20,27 +20,31 @@ const BookDetails = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p style={{ padding: '2rem', color: '#aaa' }}>Loading...</p>;
-  if (!book) return <p style={{ padding: '2rem', color: '#aaa' }}>Book not found.</p>;
+  if (loading) return <p className="p-8 text-slate-400">Loading...</p>;
+  if (!book) return <p className="p-8 text-slate-400">Book not found.</p>;
 
   return (
-    <div className="book-details-page">
-      <button className="back-btn" onClick={() => navigate(-1)}>
+    <div className="px-2">
+      <button
+        onClick={() => navigate(-1)}
+        className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-[#5b7c99] mb-6"
+      >
         <ChevronLeft size={20} /> Back
       </button>
 
-      <div className="details-layout">
-        <div className="details-left">
-          <div className="large-book-card">
+      <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
+        <div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
             <img
               src={book.cover_image_url || 'https://via.placeholder.com/300x450'}
               alt={book.title}
+              className="w-full h-auto rounded-lg shadow-md"
             />
           </div>
         </div>
 
-        <div className="details-right">
-          <h1 className="details-title">{book.title}</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 mb-3">{book.title}</h1>
 
           <ReviewComponent
             rating={Math.round(book.average_rating)}
@@ -60,10 +64,12 @@ const BookDetails = () => {
             isFavorited={book.is_favorited}
           />
 
-          <p className="details-description">"{book.description}"</p>
+          <p className="italic text-slate-600 leading-relaxed my-6">"{book.description}"</p>
 
-          <div className="comment-header-row">
-            <h3>Comments ({book.reviews?.length ?? 0})</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-slate-800">
+              Comments ({book.reviews?.length ?? 0})
+            </h3>
           </div>
 
           {(book.reviews || []).map((review) => (

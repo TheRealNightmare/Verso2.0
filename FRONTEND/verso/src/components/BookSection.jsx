@@ -3,13 +3,14 @@ import BookCard from './BookCard';
 
 const BookSection = ({ title, books }) => {
   return (
-    <section className="book-section">
-      <div className="section-header">
-        <h2 className="section-title">
-          {title} <span className="view-all">(view all)</span>
+    <section className="mb-10">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold text-slate-800">
+          {title}{' '}
+          <span className="text-sm text-slate-400 font-normal ml-1">(view all)</span>
         </h2>
       </div>
-      <div className="book-grid">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {books.map((book) => (
           <BookCard
             key={book.id}

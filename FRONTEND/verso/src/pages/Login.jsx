@@ -28,77 +28,102 @@ const Login = () => {
     }
   };
 
-  return (
-    <div className="login-container">
-      <div className="login-card">
+  const inputCls =
+    'w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5b7c99]/30';
 
-        <div className="login-logo-wrapper">
-          <BookOpen
-            size={80}
-            color="#5b7c99"
-            strokeWidth={1}
-          />
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f6f2] px-4 py-10">
+      <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-md">
+        <div className="flex justify-center mb-6">
+          <BookOpen size={80} color="#5b7c99" strokeWidth={1} />
         </div>
 
-        <h1 className="login-title">Welcome book worm</h1>
+        <h1 className="text-2xl font-bold text-center text-slate-800 mb-6">Welcome book worm</h1>
 
-        <button className="google-login">
+        <button
+          type="button"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 mb-5"
+        >
           <img
             src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
             alt="Google"
-            className="google-icon"
+            className="w-5 h-5"
           />
           Log in using Google
         </button>
 
-        <div className="divider">
-          <span>Or</span>
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-xs text-slate-400">Or</span>
+          <div className="flex-1 h-px bg-slate-200" />
         </div>
 
-        {error && <p className="auth-error-msg">{error}</p>}
+        {error && (
+          <p className="mb-4 px-3 py-2 rounded-md bg-red-50 text-sm text-red-600">{error}</p>
+        )}
 
         <form onSubmit={handleLogin}>
-          <div className="input-group">
-            <label>Email</label>
+          <div className="flex flex-col gap-1 mb-4">
+            <label className="text-sm text-slate-600">Email</label>
             <input
               type="email"
               placeholder="email@example.com"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
             />
           </div>
 
-          <div className="input-group">
-            <label>Password</label>
-            <div className="password-wrapper">
+          <div className="flex flex-col gap-1 mb-4">
+            <label className="text-sm text-slate-600">Password</label>
+            <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className={`${inputCls} pr-10`}
               />
-              {showPassword
-                ? <Eye size={18} className="eye-icon" onClick={() => setShowPassword(false)} />
-                : <EyeOff size={18} className="eye-icon" onClick={() => setShowPassword(true)} />
-              }
+              {showPassword ? (
+                <Eye
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowPassword(false)}
+                />
+              ) : (
+                <EyeOff
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowPassword(true)}
+                />
+              )}
             </div>
           </div>
 
-          <div className="login-options">
-            <label className="remember-me">
-              <input type="checkbox" /> Remember me
+          <div className="flex items-center justify-between mb-5 text-sm">
+            <label className="flex items-center gap-2 text-slate-600">
+              <input type="checkbox" className="rounded" /> Remember me
             </label>
-            <a href="#" className="forgot-link">Forgot password?</a>
+            <a href="#" className="text-[#5b7c99] hover:underline">
+              Forgot password?
+            </a>
           </div>
 
-          <button type="submit" className="login-submit-btn" disabled={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-lg bg-[#5b7c99] text-white font-medium hover:bg-[#4a6a85] disabled:opacity-60"
+          >
             {loading ? 'Logging in...' : 'Start your Journey'}
           </button>
         </form>
 
-        <p className="register-text">
-          Dont have an account? <Link to="/register">Register</Link>
+        <p className="text-center text-sm text-slate-600 mt-6">
+          Dont have an account?{' '}
+          <Link to="/register" className="text-[#5b7c99] hover:underline">
+            Register
+          </Link>
         </p>
       </div>
     </div>

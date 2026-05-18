@@ -1,16 +1,15 @@
 import React from 'react';
 
-// Sub-component for individual items
 const StatBox = ({ label, value }) => (
-  <div className="stat-box">
-    <span className="stat-label">{label}</span>
-    <span className="stat-value">{value}</span>
+  <div className="flex flex-col rounded-lg bg-slate-50 px-4 py-3">
+    <span className="text-xs uppercase tracking-wide text-slate-400">{label}</span>
+    <span className="text-sm font-medium text-slate-700 mt-1">{value}</span>
   </div>
 );
 
 const BookInfoStats = ({ author, genre, producer, status }) => {
   return (
-    <div className="book-stats-container">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
       <StatBox label="Author" value={author} />
       <StatBox label="Genre" value={genre} />
       <StatBox label="Producer" value={producer} />

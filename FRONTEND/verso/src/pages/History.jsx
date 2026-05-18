@@ -26,32 +26,36 @@ const History = () => {
     }
   };
 
-  if (loading) return <p style={{ padding: '2rem', color: '#aaa' }}>Loading history...</p>;
+  if (loading) return <p className="p-8 text-slate-400">Loading history...</p>;
 
   return (
-    <div className="history-page">
-      <h2 className="history-title">HISTORY</h2>
+    <div className="px-2">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6 tracking-wide">HISTORY</h2>
 
       {historyBooks.length === 0 && (
-        <p style={{ color: '#aaa', padding: '1rem' }}>No reading history yet.</p>
+        <p className="text-slate-400 py-4">No reading history yet.</p>
       )}
 
-      <div className="history-list">
+      <div className="flex flex-col gap-4">
         {historyBooks.map((entry) => {
           const book = entry.book;
           return (
-            <div key={entry.id} className="history-item-container">
-              <div className="history-item-card">
+            <div key={entry.id} className="bg-white p-4 rounded-xl shadow-sm">
+              <div className="flex gap-5">
                 <img
                   src={book?.cover_image_url || 'https://via.placeholder.com/120x180'}
                   alt={book?.title}
-                  className="history-cover"
+                  className="w-28 h-40 object-cover rounded-md shrink-0"
                 />
 
-                <div className="history-info">
-                  <div className="history-header-row">
-                    <h3 className="book-title">{book?.title}</h3>
-                    <X className="remove-icon" size={24} onClick={() => removeBook(entry.id)} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-lg font-semibold text-slate-800">{book?.title}</h3>
+                    <X
+                      className="text-slate-400 hover:text-red-500 cursor-pointer"
+                      size={22}
+                      onClick={() => removeBook(entry.id)}
+                    />
                   </div>
 
                   <ReviewComponent rating={Math.round(book?.average_rating ?? 0)} count={0} />
@@ -63,12 +67,18 @@ const History = () => {
                     status={`${entry.progress}%`}
                   />
 
-                  <div className="history-actions">
-                    <button className="read-btn-small" onClick={() => navigate(`/read/${book?.id}`)}>
+                  <div className="flex items-center gap-4 mt-2">
+                    <button
+                      onClick={() => navigate(`/read/${book?.id}`)}
+                      className="px-4 py-1.5 rounded-lg bg-[#5b7c99] text-white text-sm hover:bg-[#4a6a85]"
+                    >
                       Read
                     </button>
-                    <span className="history-timestamp">
-                      Last read: <strong>{new Date(entry.last_read_at).toLocaleString()}</strong>
+                    <span className="text-xs text-slate-500">
+                      Last read:{' '}
+                      <strong className="text-slate-700">
+                        {new Date(entry.last_read_at).toLocaleString()}
+                      </strong>
                     </span>
                   </div>
                 </div>

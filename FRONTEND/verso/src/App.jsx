@@ -45,15 +45,15 @@ function AppContent() {
   );
 
   if (isAuthPage) {
-    return <div className="auth-layout">{appRoutes}</div>;
+    return <div className="min-h-screen bg-[#f8f6f2]">{appRoutes}</div>;
   }
 
   return (
-    <div className="app-layout">
+    <div className="flex min-h-screen bg-[#f8f6f2]">
       <Sidebar />
-      <main className="app-container">
+      <main className="flex-1 flex flex-col min-w-0">
         {!isReadingMode && <TopBar />}
-        <div className="page-content">{appRoutes}</div>
+        <div className="flex-1 p-6">{appRoutes}</div>
         {!isReadingMode && <Footer />}
       </main>
     </div>

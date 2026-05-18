@@ -4,13 +4,11 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="app-footer">
-      <div className="footer-links">
-        <a href="#terms">Terms & Conditions</a>
+    <footer className="border-t border-slate-200 px-6 py-4 flex items-center justify-between text-sm text-slate-500 bg-white">
+      <div>
+        <a href="#terms" className="hover:text-[#5b7c99]">Terms & Conditions</a>
       </div>
-      <div className="footer-copyright">
-        © {currentYear} Verso. All rights reserved.
-      </div>
+      <div>© {currentYear} Verso. All rights reserved.</div>
     </footer>
   );
 };
