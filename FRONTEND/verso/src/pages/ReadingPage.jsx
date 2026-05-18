@@ -1,175 +1,153 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Bookmark, Book, Edit3 } from 'lucide-react';
-import { fetchBookContent } from '../api/content';
-import { saveHistory } from '../api/history';
-import { addBookmark, removeBookmark } from '../api/bookmarks';
-
-const PAGE_SIZE = 3000;
-
-function splitPages(text) {
-  const pages = [];
-  for (let i = 0; i < text.length; i += PAGE_SIZE) {
-    pages.push(text.slice(i, i + PAGE_SIZE));
-  }
-  return pages.length ? pages : [''];
-}
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3 } from 'lucide-react';
+import { mockReadingBook, mockAnnotations } from '../mocks/reading';
 
 const ReadingPage = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const [bookData, setBookData] = useState(null);
-  const [pages, setPages] = useState([]);
+  const book = mockReadingBook;
+  const pages = book?.pages ?? [];
+
   const [currentPage, setCurrentPage] = useState(0);
   const [isAnnotationsOpen, setIsAnnotationsOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const saveTimer = useRef(null);
-
-  useEffect(() => {
-    fetchBookContent(id)
-      .then((data) => {
-        setBookData(data);
-        const pgs = splitPages(data.content || '');
-        setPages(pgs);
-        saveHistory(id, Math.round((1 / (pgs.length || 1)) * 100)).catch(() => {});
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  const saveProgress = useCallback(
-    (page, total) => {
-      if (!total) return;
-      const progress = Math.round(((page + 1) / total) * 100);
-      clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        saveHistory(id, progress).catch(() => {});
-      }, 1000);
-    },
-    [id]
-  );
 
   const goToPage = (next) => {
-    const clamped = Math.max(0, Math.min(next, pages.length - 1));
-    setCurrentPage(clamped);
-    saveProgress(clamped, pages.length);
+    if (!pages.length) return;
+    setCurrentPage(Math.max(0, Math.min(next, pages.length - 1)));
   };
 
-  const handleSaveClick = async () => {
-    try {
-      if (bookmarked) {
-        await removeBookmark(id);
-        setBookmarked(false);
-      } else {
-        await addBookmark(id);
-        setBookmarked(true);
-      }
-    } catch (err) {
-      if (err.status === 401) navigate('/login');
-    }
+  const page = pages[currentPage] ?? {
+    chapter: 1,
+    chapterTitle: '',
+    left: '',
+    right: '',
   };
 
-  if (loading) return <p className="p-8 text-slate-400">Loading book...</p>;
-
-  const pageText = pages[currentPage] || '';
-  const half = Math.ceil(pageText.length / 2);
+  const TopIcons = ({ onAnnotations }) => (
+    <div className="flex items-center gap-4 text-[#2c3e50]">
+      <button
+        onClick={onAnnotations}
+        className={`p-1 rounded transition-colors ${
+          isAnnotationsOpen ? 'text-[#5b7c99]' : 'hover:text-[#5b7c99]'
+        }`}
+        aria-label="Toggle annotations"
+      >
+        <BookMarked size={22} />
+      </button>
+      <button
+        onClick={() => setBookmarked((b) => !b)}
+        className="p-1 rounded hover:text-[#5b7c99]"
+        aria-label="Bookmark"
+      >
+        <Bookmark
+          size={22}
+          fill={bookmarked ? '#5b7c99' : 'none'}
+          stroke={bookmarked ? '#5b7c99' : 'currentColor'}
+        />
+      </button>
+      <button className="p-1 rounded hover:text-[#5b7c99]" aria-label="Edit annotation">
+        <Edit3 size={22} />
+      </button>
+    </div>
+  );
 
   return (
-    <div className="flex h-screen w-full">
-      <div className="flex-1 flex flex-col bg-[#f8f6f2] min-w-0">
-        <header className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+    <div className="flex h-[calc(100vh-3rem)] -m-6 bg-[#f8f6f2]">
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="grid grid-cols-3 items-center px-8 py-5 bg-[#f8f6f2]">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-[#5b7c99]"
+            className="inline-flex items-center gap-1 text-sm text-[#2c3e50] hover:text-[#5b7c99] justify-self-start"
           >
-            <ChevronLeft size={20} /> Back
+            <ChevronLeft size={18} /> Back
           </button>
 
           <div className="text-center">
-            <h3 className="text-xs uppercase tracking-wide text-slate-400">{bookData?.author}</h3>
-            <h2 className="text-base font-semibold text-slate-800">{bookData?.title}</h2>
+            <h2 className="text-lg font-semibold text-[#2c3e50]">Chapter {page.chapter}</h2>
+            <h3 className="text-lg font-semibold text-[#2c3e50]">{page.chapterTitle}</h3>
           </div>
 
-          <div className="flex items-center gap-3 text-slate-600">
-            <Book
-              size={22}
-              className={`cursor-pointer ${isAnnotationsOpen ? 'text-[#5b7c99]' : ''}`}
-              onClick={() => setIsAnnotationsOpen(!isAnnotationsOpen)}
-            />
-            <Bookmark
-              size={22}
-              fill={bookmarked ? '#5b7c99' : 'none'}
-              stroke={bookmarked ? '#5b7c99' : 'currentColor'}
-              onClick={handleSaveClick}
-              className="cursor-pointer"
-            />
-            <Edit3 size={22} />
+          <div className="justify-self-end">
+            <TopIcons onAnnotations={() => setIsAnnotationsOpen((o) => !o)} />
           </div>
         </header>
 
-        <main className="relative flex-1 flex items-stretch px-16 py-8 overflow-hidden">
+        <main className="relative flex-1 flex items-center px-16 py-6 overflow-hidden bg-[#f8f6f2]">
           <button
             onClick={() => goToPage(currentPage - 1)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white shadow hover:bg-slate-50"
+            disabled={currentPage <= 0}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            aria-label="Previous page"
           >
-            <ChevronLeft size={28} />
+            <ChevronLeft size={32} strokeWidth={1.5} />
           </button>
 
-          <div className="flex-1 grid grid-cols-2 gap-10 overflow-y-auto">
+          <div
+            key={currentPage}
+            className="flex-1 grid grid-cols-2 gap-16 h-full overflow-y-auto px-4 animate-page-turn"
+          >
             <div>
-              <p className="whitespace-pre-wrap text-slate-700 leading-relaxed">
-                {pageText.slice(0, half)}
+              <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#2c3e50]/80">
+                {page.left}
               </p>
             </div>
             <div>
-              <p className="whitespace-pre-wrap text-slate-700 leading-relaxed">
-                {pageText.slice(half)}
+              <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#2c3e50]/80">
+                {page.right}
               </p>
             </div>
           </div>
 
           <button
             onClick={() => goToPage(currentPage + 1)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white shadow hover:bg-slate-50"
+            disabled={currentPage >= pages.length - 1}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            aria-label="Next page"
           >
-            <ChevronRight size={28} />
+            <ChevronRight size={32} strokeWidth={1.5} />
           </button>
         </main>
 
-        <footer className="flex items-center justify-center px-6 py-3 border-t border-slate-200 bg-white text-sm text-slate-500">
-          <span>
-            {currentPage + 1}/{pages.length}
-          </span>
+        <footer className="flex items-center justify-center py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
+          {currentPage + 1}/{pages.length}
         </footer>
       </div>
 
       {isAnnotationsOpen && (
-        <aside className="w-80 border-l border-slate-200 bg-white p-5 flex flex-col">
-          <div className="flex items-center gap-3 text-slate-600 mb-6">
-            <Book
-              size={22}
+        <aside className="w-72 bg-[#b8c5d6] flex flex-col">
+          <div className="flex items-center justify-end gap-4 px-6 py-5 text-[#2c3e50]">
+            <button
               onClick={() => setIsAnnotationsOpen(false)}
-              className="cursor-pointer"
-            />
-            <Bookmark
-              size={22}
-              fill={bookmarked ? '#5b7c99' : 'none'}
-              onClick={handleSaveClick}
-              className="cursor-pointer"
-            />
-            <Edit3 size={22} />
+              className="p-1 text-[#5b7c99]"
+              aria-label="Close annotations"
+            >
+              <BookMarked size={22} />
+            </button>
+            <button onClick={() => setBookmarked((b) => !b)} className="p-1" aria-label="Bookmark">
+              <Bookmark
+                size={22}
+                fill={bookmarked ? '#2c3e50' : 'none'}
+                stroke="#2c3e50"
+              />
+            </button>
+            <button className="p-1" aria-label="Edit annotation">
+              <Edit3 size={22} />
+            </button>
           </div>
 
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">Annotations</h3>
+          <h3 className="text-center text-lg font-semibold text-[#2c3e50] mb-4">Annotations</h3>
 
-          <div className="flex flex-col gap-2">
-            <div className="p-3 rounded-lg bg-slate-50 text-sm text-slate-700">
-              Progress: {Math.round(((currentPage + 1) / pages.length) * 100)}%
-            </div>
-            <div className="p-3 rounded-lg bg-slate-50 text-sm text-slate-700">
-              Page {currentPage + 1} of {pages.length}
-            </div>
+          <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-3">
+            {mockAnnotations.map((a) => (
+              <button
+                key={a.id}
+                onClick={() => goToPage(a.chapter - 1)}
+                className="text-left text-[13px] text-[#2c3e50] hover:text-[#5b7c99] leading-snug"
+              >
+                {a.title}
+              </button>
+            ))}
           </div>
         </aside>
       )}
