@@ -10,12 +10,11 @@ import History from './pages/History';
 import Storage from './pages/Storage';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/dashboard';
-import UserProfile from './pages/profile';
-import Event from './pages/event';
-import EventCreate from './pages/eventcreate';
-import Community from './pages/friends';
-
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Event from './pages/Event';
+import EventCreate from './pages/EventCreate';
+import Community from './pages/Community';
 
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
@@ -28,23 +27,21 @@ function AppContent() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const appRoutes = (
-    <BrowserRouter>
     <Routes>
-      <BrowserRouter>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
+      <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
+      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
       <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
       <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/profile" element={<UserProfile />} />
-        <Route path="/events" element={<Event />} />
-        <Route path="/create-event" element={<EventCreate />} />
-        <Route path="/community" element={<Community />} />
-      </Routes>
-    </BrowserRouter>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 
   if (isAuthPage) {
@@ -56,9 +53,7 @@ function AppContent() {
       <Sidebar />
       <main className="app-container">
         {!isReadingMode && <TopBar />}
-        <div className="page-content">
-          {appRoutes}
-        </div>
+        <div className="page-content">{appRoutes}</div>
         {!isReadingMode && <Footer />}
       </main>
     </div>
@@ -67,7 +62,6 @@ function AppContent() {
 
 function App() {
   return (
-
     <AuthProvider>
       <AppContent />
     </AuthProvider>

@@ -35,10 +35,20 @@ const Sidebar = () => {
           />
         </Link>
 
-        {/* OTHER ICONS (Keep them without Links if they don't have pages yet) */}
-        <Grid className="icon" size={24} />
-        <Calendar className="icon" size={24} />
-        <Users className="icon" size={24} />
+        {/* DASHBOARD */}
+        <Link to="/dashboard">
+          <Grid className={`icon ${location.pathname === '/dashboard' ? 'active' : ''}`} size={24} />
+        </Link>
+
+        {/* EVENTS */}
+        <Link to="/events">
+          <Calendar className={`icon ${location.pathname.startsWith('/events') || location.pathname === '/create-event' ? 'active' : ''}`} size={24} />
+        </Link>
+
+        {/* COMMUNITY */}
+        <Link to="/community">
+          <Users className={`icon ${location.pathname === '/community' ? 'active' : ''}`} size={24} />
+        </Link>
       </nav>
     </aside>
   );
