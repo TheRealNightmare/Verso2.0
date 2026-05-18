@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-const BookCard = ({ id, cover }) => {
+const BookCard = ({ id, title, author, cover }) => {
   return (
     <Link
       to={`/book/${id}`}
@@ -8,9 +8,15 @@ const BookCard = ({ id, cover }) => {
     >
       <img
         src={cover}
-        alt="Book"
+        alt={title || 'Book'}
         className="w-full h-48 object-cover rounded-md shadow-md"
       />
+      {title && (
+        <p className="mt-2 text-sm text-slate-700 truncate">{title}</p>
+      )}
+      {author && (
+        <p className="text-sm font-semibold text-slate-900 truncate">{author}</p>
+      )}
     </Link>
   );
 };
