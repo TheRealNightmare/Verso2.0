@@ -11,6 +11,7 @@ import Storage from './pages/Storage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
+
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
   return token ? children : <Navigate to="/login" replace />;
@@ -22,6 +23,7 @@ function AppContent() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const appRoutes = (
+    <BrowserRouter>
     <Routes>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
@@ -30,7 +32,13 @@ function AppContent() {
       <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-    </Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/events" element={<Event />} />
+        <Route path="/create-event" element={<EventCreate />} />
+        <Route path="/community" element={<Community />} />
+      </Routes>
+    </BrowserRouter>
   );
 
   if (isAuthPage) {
