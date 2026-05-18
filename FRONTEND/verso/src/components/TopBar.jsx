@@ -9,7 +9,7 @@ const TopBar = () => {
   const avatarUrl = 'https://i.pravatar.cc/64?img=12';
 
   return (
-    <header className="h-16 px-6 flex items-center justify-between bg-white border-b border-slate-200">
+    <header className="h-16 px-6 flex items-center justify-between bg-[#f8f6f2] border-b border-slate-200">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input

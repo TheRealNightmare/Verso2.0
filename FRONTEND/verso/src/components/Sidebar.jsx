@@ -15,7 +15,7 @@ const Sidebar = () => {
   const location = useLocation();
 
   return (
-    <aside className="w-20 bg-white border-r border-slate-200 flex flex-col items-center py-6 gap-6 shrink-0">
+    <aside className="w-20 bg-[#f8f6f2] border-r border-slate-200 flex flex-col items-center py-6 gap-6 shrink-0">
       <div className="flex items-center justify-center">
         <BookOpen size={32} color="#2c3e50" fill="#2c3e50" strokeWidth={1.5} />
       </div>
