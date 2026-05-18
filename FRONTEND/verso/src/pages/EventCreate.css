@@ -1,0 +1,53 @@
+.event-create-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f6f2;
+}
+
+.event-form {
+  width: 700px;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+}
+
+.event-form input,
+.event-form textarea,
+.event-form select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.event-form textarea {
+  height: 120px;
+  resize: none;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.event-form .cancel-btn {
+  background: gray;
+}
+
+.event-form button {
+  padding: 10px 20px;
+  border: none;
+  background: #4f83cc;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
