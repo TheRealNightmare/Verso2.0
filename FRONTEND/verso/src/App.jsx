@@ -10,6 +10,11 @@ import History from './pages/History';
 import Storage from './pages/Storage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/dashboard';
+import UserProfile from './pages/profile';
+import Event from './pages/event';
+import EventCreate from './pages/eventcreate';
+import Community from './pages/friends';
 
 
 function ProtectedRoute({ children }) {
@@ -25,6 +30,7 @@ function AppContent() {
   const appRoutes = (
     <BrowserRouter>
     <Routes>
+      <BrowserRouter>
       <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
       <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
@@ -61,6 +67,7 @@ function AppContent() {
 
 function App() {
   return (
+
     <AuthProvider>
       <AppContent />
     </AuthProvider>
