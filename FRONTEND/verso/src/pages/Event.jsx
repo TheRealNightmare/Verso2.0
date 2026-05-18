@@ -2,25 +2,16 @@ import { Link } from 'react-router-dom';
 
 const Event = () => {
   return (
-    <div style={{ padding: '2rem', color: '#eee' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Events</h1>
+    <div className="p-2">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-800">Events</h1>
         <Link to="/create-event">
-          <button
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              background: '#4f83cc',
-              color: 'white',
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}
-          >
+          <button className="px-5 py-2 rounded-lg bg-[#4f83cc] text-white hover:bg-[#3f6ab0]">
             Create Event
           </button>
         </Link>
       </div>
-      <p style={{ color: '#aaa' }}>No events yet.</p>
+      <p className="text-slate-400">No events yet.</p>
     </div>
   );
 };

@@ -17,22 +17,21 @@ function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (event) => {
-    event.preventDefault(); // Prevents page reload
+    event.preventDefault();
     setError('');
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Ensure backend dev's register function receives the right object keys
       await register({ name, email, password });
-      navigate('/'); 
+      navigate('/');
     } catch (err) {
-      console.error("Registration Error:", err);
+      console.error('Registration Error:', err);
       if (err.errors) {
         const firstError = Object.values(err.errors)[0];
         setError(Array.isArray(firstError) ? firstError[0] : firstError);
@@ -44,92 +43,120 @@ function Register() {
     }
   };
 
+  const inputCls =
+    'w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5b7c99]/30';
+
   return (
-    <div className="login-container">
-      <div className="login-card reg-card">
-        
-        {/* Top Undo Icon */}
-        <div className="reg-undo-wrapper">
-          <Undo2 
-            size={32} 
-            className="undo-icon" 
-            onClick={() => navigate('/login')} 
+    <div className="min-h-screen flex items-center justify-center bg-[#f8f6f2] px-4 py-10">
+      <div className="relative w-full max-w-md bg-white p-10 rounded-2xl shadow-md">
+        <div className="absolute top-4 right-4">
+          <Undo2
+            size={28}
+            className="text-slate-500 hover:text-[#5b7c99] cursor-pointer"
+            onClick={() => navigate('/login')}
           />
         </div>
 
-        <h1 className="reg-title">Registration</h1>
-        <p className="reg-subtitle">Be a worm</p>
+        <h1 className="text-2xl font-bold text-slate-800">Registration</h1>
+        <p className="text-sm text-slate-500 mb-6">Be a worm</p>
 
-        {error && <p className="auth-error-msg">{error}</p>}
+        {error && (
+          <p className="mb-4 px-3 py-2 rounded-md bg-red-50 text-sm text-red-600">{error}</p>
+        )}
 
-        <form onSubmit={handleSubmit} className="auth-form-wrapper">
-          <div className="input-group">
-            <label>Username</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-slate-600">Username</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Username"
+              className={inputCls}
             />
           </div>
 
-          <div className="input-group">
-            <label>Email</label>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-slate-600">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email"
+              className={inputCls}
             />
           </div>
 
-          <div className="input-group">
-            <label>Password</label>
-            <div className="password-wrapper">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-slate-600">Password</label>
+            <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
+                className={`${inputCls} pr-10`}
               />
-              {showPassword
-                ? <Eye size={18} className="eye-icon" onClick={() => setShowPassword(false)} />
-                : <EyeOff size={18} className="eye-icon" onClick={() => setShowPassword(true)} />
-              }
+              {showPassword ? (
+                <Eye
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowPassword(false)}
+                />
+              ) : (
+                <EyeOff
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowPassword(true)}
+                />
+              )}
             </div>
           </div>
 
-          <div className="input-group">
-            <label>Confirm Password</label>
-            <div className="password-wrapper">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-slate-600">Confirm Password</label>
+            <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
+                className={`${inputCls} pr-10`}
               />
-              {showConfirmPassword
-                ? <Eye size={18} className="eye-icon" onClick={() => setShowConfirmPassword(false)} />
-                : <EyeOff size={18} className="eye-icon" onClick={() => setShowConfirmPassword(true)} />
-              }
+              {showConfirmPassword ? (
+                <Eye
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowConfirmPassword(false)}
+                />
+              ) : (
+                <EyeOff
+                  size={18}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
+                  onClick={() => setShowConfirmPassword(true)}
+                />
+              )}
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            className="login-submit-btn" 
+          <button
+            type="submit"
             disabled={loading}
+            className="w-full py-3 rounded-lg bg-[#5b7c99] text-white font-medium hover:bg-[#4a6a85] disabled:opacity-60 mt-2"
           >
             {loading ? 'Signing up...' : 'Sign up'}
           </button>
         </form>
 
-        <p className="register-text">
-          already have an account? <Link to="/login">Signup</Link>
+        <p className="text-center text-sm text-slate-600 mt-6">
+          already have an account?{' '}
+          <Link to="/login" className="text-[#5b7c99] hover:underline">
+            Signup
+          </Link>
         </p>
       </div>
     </div>

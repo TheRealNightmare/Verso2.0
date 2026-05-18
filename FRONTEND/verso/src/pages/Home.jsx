@@ -23,17 +23,17 @@ function Home() {
     (books || []).map((b) => ({ id: b.id, title: b.title, author: b.author, cover: b.cover_image_url }));
 
   if (loading) {
-    return <p style={{ padding: '2rem', color: '#aaa' }}>Loading books...</p>;
+    return <p className="p-8 text-slate-400">Loading books...</p>;
   }
 
   return (
-    <>
-      <BookSection title="Latest"          books={toCards(sections.latest)} />
-      <BookSection title="Recommended"     books={toCards(sections.recommended)} />
+    <div className="px-2">
+      <BookSection title="Latest" books={toCards(sections.latest)} />
+      <BookSection title="Recommended" books={toCards(sections.recommended)} />
       <BookSection title="Exclusive books" books={toCards(sections.exclusive)} />
-      <BookSection title="Highly Rated"    books={toCards(sections.highly_rated)} />
-      <BookSection title="Favorite books"  books={toCards(sections.favorites)} />
-    </>
+      <BookSection title="Highly Rated" books={toCards(sections.highly_rated)} />
+      <BookSection title="Favorite books" books={toCards(sections.favorites)} />
+    </div>
   );
 }
 
