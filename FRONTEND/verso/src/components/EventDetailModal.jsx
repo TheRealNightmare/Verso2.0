@@ -36,25 +36,48 @@ const EventDetailModal = ({ event, onClose }) => {
             <X size={18} />
           </button>
         </div>
+        {event.cover_image_url && (
+          <img
+            src={event.cover_image_url}
+            alt={event.title}
+            className="w-full h-48 object-cover"
+          />
+        )}
         <div className="p-5 space-y-3">
           <div>
             <div className="text-xs text-slate-500">Date</div>
             <div className="text-sm text-slate-800">{formatDate(event.date)}</div>
           </div>
+          {(event.time_from || event.time_to) && (
+            <div>
+              <div className="text-xs text-slate-500">Time</div>
+              <div className="text-sm text-slate-800">
+                {event.time_from} – {event.time_to}
+              </div>
+            </div>
+          )}
           <div>
             <div className="text-xs text-slate-500">Hosted by</div>
             <div className="text-sm text-slate-800">{event.host}</div>
           </div>
+          {event.location && (
+            <div>
+              <div className="text-xs text-slate-500">Location</div>
+              <div className="text-sm text-slate-800">{event.location}</div>
+            </div>
+          )}
           {event.subtitle && (
             <div>
               <div className="text-xs text-slate-500">Featuring</div>
               <div className="text-sm text-slate-800">{event.subtitle}</div>
             </div>
           )}
-          <div>
-            <div className="text-xs text-slate-500">Details</div>
-            <p className="text-sm text-slate-700 leading-relaxed">{event.description}</p>
-          </div>
+          {event.description && (
+            <div>
+              <div className="text-xs text-slate-500">Details</div>
+              <p className="text-sm text-slate-700 leading-relaxed">{event.description}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
