@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "epubjs": "^0.3.93",
+    "laravel-echo": "^2.3.4",
     "lucide-react": "^1.6.0",
     "pdfjs-dist": "^5.7.284",
+    "pusher-js": "^8.5.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.15.1",
