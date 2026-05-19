@@ -12,10 +12,10 @@ class BookContentController extends Controller
         $book = Book::with('content')->findOrFail($id);
 
         return response()->json([
-            'book_id' => $book->id,
-            'title'   => $book->title,
-            'author'  => $book->author,
-            'content' => $book->content?->content ?? '',
+            'book_id'  => $book->id,
+            'title'    => $book->title,
+            'author'   => $book->author,
+            'chapters' => $book->content?->chapters ?? [],
         ]);
     }
 }
