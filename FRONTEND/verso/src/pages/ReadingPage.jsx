@@ -1,28 +1,98 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3 } from 'lucide-react';
-import { mockReadingBook, mockAnnotations } from '../mocks/reading';
+import { fetchBookContent } from '../api/content';
+
+const CHARS_PER_PAGE = 1800;
+
+function chaptersToPages(chapters) {
+  const pages = [];
+  for (const ch of chapters || []) {
+    const text = (ch.content || '').trim();
+    if (!text) {
+      pages.push({ chapter: ch.number, chapterTitle: ch.title, left: '', right: '' });
+      continue;
+    }
+    for (let i = 0; i < text.length; i += CHARS_PER_PAGE * 2) {
+      const slice = text.slice(i, i + CHARS_PER_PAGE * 2);
+      const mid = Math.floor(slice.length / 2);
+      const splitAt = slice.lastIndexOf(' ', mid + 100) > mid - 100
+        ? slice.lastIndexOf(' ', mid + 100)
+        : mid;
+      pages.push({
+        chapter: ch.number,
+        chapterTitle: ch.title,
+        left: slice.slice(0, splitAt).trim(),
+        right: slice.slice(splitAt).trim(),
+      });
+    }
+  }
+  return pages;
+}
 
 const ReadingPage = () => {
   const navigate = useNavigate();
-  const book = mockReadingBook;
-  const pages = book?.pages ?? [];
+  const { id } = useParams();
 
+  const [chapters, setChapters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [isAnnotationsOpen, setIsAnnotationsOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchBookContent(id)
+      .then((data) => {
+        if (cancelled) return;
+        setChapters(data.chapters || []);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err?.status === 401) {
+          navigate('/login');
+          return;
+        }
+        setError(err?.message || 'Failed to load reading content.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id, navigate]);
+
+  const pages = useMemo(() => chaptersToPages(chapters), [chapters]);
+  const annotations = useMemo(
+    () =>
+      (chapters || []).map((c) => ({
+        id: `ch-${c.number}`,
+        chapter: c.number,
+        title: c.title,
+      })),
+    [chapters],
+  );
+
+  const firstPageIndexForChapter = (chapterNumber) =>
+    Math.max(0, pages.findIndex((p) => p.chapter === chapterNumber));
 
   const goToPage = (next) => {
     if (!pages.length) return;
     setCurrentPage(Math.max(0, Math.min(next, pages.length - 1)));
   };
 
-  const page = pages[currentPage] ?? {
-    chapter: 1,
-    chapterTitle: '',
-    left: '',
-    right: '',
-  };
+  if (loading) {
+    return <p className="px-6 py-6 text-sm text-gray-500">Loading book...</p>;
+  }
+  if (error) {
+    return <p className="px-6 py-6 text-sm text-red-600">{error}</p>;
+  }
+  if (!pages.length) {
+    return <p className="px-6 py-6 text-sm text-gray-500">No content available.</p>;
+  }
+
+  const page = pages[currentPage];
 
   const TopIcons = ({ onAnnotations }) => (
     <div className="flex items-center gap-4 text-[#2c3e50]">
@@ -139,10 +209,10 @@ const ReadingPage = () => {
           <h3 className="text-center text-lg font-semibold text-[#2c3e50] mb-4">Annotations</h3>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6 flex flex-col gap-3">
-            {mockAnnotations.map((a) => (
+            {annotations.map((a) => (
               <button
                 key={a.id}
-                onClick={() => goToPage(a.chapter - 1)}
+                onClick={() => goToPage(firstPageIndexForChapter(a.chapter))}
                 className="text-left text-[13px] text-[#2c3e50] hover:text-[#5b7c99] leading-snug"
               >
                 {a.title}

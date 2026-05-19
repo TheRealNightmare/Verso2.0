@@ -9,7 +9,8 @@ class Book extends Model
 {
     protected $fillable = [
         'title', 'author', 'description', 'cover_image_url',
-        'genre', 'average_rating', 'published_year', 'gutenberg_id', 'is_exclusive',
+        'genre', 'producer', 'release_status', 'bestseller_tag',
+        'average_rating', 'published_year', 'gutenberg_id', 'is_exclusive',
     ];
 
     protected $appends = ['is_bookmarked', 'is_favorited'];
