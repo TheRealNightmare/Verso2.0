@@ -4,10 +4,14 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookContentController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReadingSessionController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\TodoController;
 use App\Http\Controllers\UserUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,4 +60,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/uploads', [UserUploadController::class, 'index']);
     Route::post('/uploads', [UserUploadController::class, 'store']);
     Route::delete('/uploads/{id}', [UserUploadController::class, 'destroy']);
+
+    // Dashboard
+    Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
+
+    // Todos
+    Route::get   ('/todos',      [TodoController::class, 'index']);
+    Route::post  ('/todos',      [TodoController::class, 'store']);
+    Route::patch ('/todos/{id}', [TodoController::class, 'update']);
+    Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
+
+    // Profile
+    Route::get  ('/profile', [ProfileController::class, 'show']);
+    Route::patch('/profile', [ProfileController::class, 'update']);
+
+    // Reading sessions
+    Route::post ('/reading-sessions',      [ReadingSessionController::class, 'store']);
+    Route::patch('/reading-sessions/{id}', [ReadingSessionController::class, 'update']);
 });
