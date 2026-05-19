@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Calendar, MapPin, Camera, Video } from 'lucide-react';
 import { EVENT_CATEGORIES } from '../mocks/events';
+import { createEvent } from '../api/events';
 
 const Label = ({ children, required }) => (
   <label className="block text-xs text-slate-700 mb-1">
@@ -12,25 +13,48 @@ const Label = ({ children, required }) => (
 
 const EventCreate = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
-  const [name, setName] = useState('');
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [host, setHost] = useState('');
   const [date, setDate] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
   const [details, setDetails] = useState('');
+  const [coverImage, setCoverImage] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   const inputCls =
     'w-full px-3 py-2.5 bg-white border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4f83cc]/30';
 
-  const requiredFilled = name && date && from && to && category && location;
+  const requiredFilled = title && host && date && from && to && category && location;
 
-  const handleCreate = () => {
-    if (!requiredFilled) return;
-    const payload = { name, date, from, to, category, location, details };
-    console.log('Create event payload:', payload);
-    navigate('/events');
+  const handleCreate = async () => {
+    if (!requiredFilled || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('title', title);
+      if (subtitle) fd.append('subtitle', subtitle);
+      fd.append('host', host);
+      fd.append('description', details);
+      fd.append('date', date);
+      fd.append('time_from', from);
+      fd.append('time_to', to);
+      fd.append('category', category);
+      fd.append('location', location);
+      if (coverImage) fd.append('cover_image', coverImage);
+      await createEvent(fd);
+      navigate('/events');
+    } catch (e) {
+      setError(e?.message || 'Failed to create event');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -44,12 +68,38 @@ const EventCreate = () => {
       </Link>
 
       <div className="px-2 sm:px-8 py-2">
+        {error && (
+          <div className="mb-3 px-4 py-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="mb-4">
           <Label required>Event Name</Label>
           <input
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+
+        <div className="mb-4">
+          <Label>Subtitle</Label>
+          <input
+            type="text"
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            className={inputCls}
+          />
+        </div>
+
+        <div className="mb-4">
+          <Label required>Host</Label>
+          <input
+            type="text"
+            value={host}
+            onChange={(e) => setHost(e.target.value)}
             className={inputCls}
           />
         </div>
@@ -143,17 +193,29 @@ const EventCreate = () => {
 
           <div>
             <Label>Upload Media</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+              className="hidden"
+            />
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
+                onClick={() => fileInputRef.current?.click()}
                 className="flex flex-col items-center justify-center gap-1 py-6 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
               >
                 <Camera size={22} className="text-[#4f83cc]" />
-                <span className="text-xs text-slate-600">Photo</span>
+                <span className="text-xs text-slate-600">
+                  {coverImage ? coverImage.name.slice(0, 18) : 'Photo'}
+                </span>
               </button>
               <button
                 type="button"
-                className="flex flex-col items-center justify-center gap-1 py-6 bg-white border border-slate-200 rounded-md hover:bg-slate-50"
+                disabled
+                title="Video upload coming soon"
+                className="flex flex-col items-center justify-center gap-1 py-6 bg-white border border-slate-200 rounded-md opacity-50 cursor-not-allowed"
               >
                 <Video size={22} className="text-[#4f83cc]" />
                 <span className="text-xs text-slate-600">Video</span>
@@ -171,10 +233,10 @@ const EventCreate = () => {
           </button>
           <button
             onClick={handleCreate}
-            disabled={!requiredFilled}
+            disabled={!requiredFilled || submitting}
             className="px-8 py-2 rounded-md bg-[#4f83cc] text-white text-sm hover:bg-[#3f6ab0] disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
-            Create
+            {submitting ? 'Creating…' : 'Create'}
           </button>
         </div>
       </div>
