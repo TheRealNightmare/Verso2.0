@@ -4,10 +4,14 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookContentController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\CommunityMessageController;
+use App\Http\Controllers\CommunityReactionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingSessionController;
 use App\Http\Controllers\ReviewController;
@@ -77,4 +81,16 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reading sessions
     Route::post ('/reading-sessions',      [ReadingSessionController::class, 'store']);
     Route::patch('/reading-sessions/{id}', [ReadingSessionController::class, 'update']);
+
+    // Community
+    Route::get   ('/community/info',                            [CommunityController::class, 'info']);
+    Route::get   ('/community/threads',                         [CommunityMessageController::class, 'threads']);
+    Route::get   ('/community/messages',                        [CommunityMessageController::class, 'index']);
+    Route::post  ('/community/messages',                        [CommunityMessageController::class, 'store']);
+    Route::patch ('/community/messages/{id}',                   [CommunityMessageController::class, 'update']);
+    Route::delete('/community/messages/{id}',                   [CommunityMessageController::class, 'destroy']);
+    Route::post  ('/community/messages/{id}/reactions',         [CommunityReactionController::class, 'toggle']);
+
+    // Presence heartbeat
+    Route::post('/presence/ping', [PresenceController::class, 'ping']);
 });
