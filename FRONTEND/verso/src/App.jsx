@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import BookDetails from './pages/BookDetails';
 import ReadingPage from './pages/ReadingPage';
+import UploadReadingPage from './pages/UploadReadingPage';
 import History from './pages/History';
 import Storage from './pages/Storage';
 import Login from './pages/Login';
@@ -18,7 +19,7 @@ import Community from './pages/Community';
 
 function AppContent() {
   const location = useLocation();
-  const isReadingMode = location.pathname.startsWith('/read');
+  const isReadingMode = location.pathname.startsWith('/read') || location.pathname.startsWith('/reading');
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const appRoutes = (
@@ -33,6 +34,7 @@ function AppContent() {
       <Route path="/history" element={<History />} />
       <Route path="/storage" element={<Storage />} />
       <Route path="/read/:id" element={<ReadingPage />} />
+      <Route path="/reading/upload/:uploadId" element={<UploadReadingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="*" element={<Navigate to="/" replace />} />
