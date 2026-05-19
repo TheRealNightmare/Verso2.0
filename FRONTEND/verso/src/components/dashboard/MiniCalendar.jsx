@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -14,9 +14,17 @@ function startOfWeek(date) {
   return d;
 }
 
-const MiniCalendar = () => {
+function toISODate(d) {
+  const yr = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const dy = String(d.getDate()).padStart(2, '0');
+  return `${yr}-${mo}-${dy}`;
+}
+
+const MiniCalendar = ({ marks = [] }) => {
   const today = new Date();
   const [anchor, setAnchor] = useState(() => startOfWeek(today));
+  const markSet = useMemo(() => new Set(marks), [marks]);
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(anchor);
@@ -66,19 +74,25 @@ const MiniCalendar = () => {
         ))}
         {days.map((d) => {
           const active = isToday(d);
+          const marked = markSet.has(toISODate(d));
           return (
-            <button
-              key={d.toISOString()}
-              type="button"
-              onClick={() => console.log('calendar day clicked', d.toISOString())}
-              className={`w-7 h-7 mx-auto rounded-full text-xs flex items-center justify-center transition-colors ${
-                active
-                  ? 'bg-[#1e3a5f] text-white font-semibold'
-                  : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              {d.getDate()}
-            </button>
+            <div key={d.toISOString()} className="flex flex-col items-center">
+              <button
+                type="button"
+                className={`w-7 h-7 rounded-full text-xs flex items-center justify-center transition-colors ${
+                  active
+                    ? 'bg-[#1e3a5f] text-white font-semibold'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {d.getDate()}
+              </button>
+              <span
+                className={`mt-0.5 w-1 h-1 rounded-full ${
+                  marked ? 'bg-[#4f7aa3]' : 'bg-transparent'
+                }`}
+              />
+            </div>
           );
         })}
       </div>

@@ -1,7 +1,6 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { leaderboard } from '../../mocks/dashboard';
 
-const LeaderBoard = () => {
+const LeaderBoard = ({ rows = [] }) => {
   const handleRowClick = (row) => {
     console.log('leaderboard row clicked', row);
   };
@@ -21,39 +20,47 @@ const LeaderBoard = () => {
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map((row) => (
-              <tr
-                key={row.id}
-                onClick={() => handleRowClick(row)}
-                className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-              >
-                <td className="py-3">
-                  <div className="flex items-center gap-1 text-slate-700">
-                    <span>{row.rank}</span>
-                    {row.trend === 'up' ? (
-                      <TrendingUp size={14} className="text-green-500" />
-                    ) : (
-                      <TrendingDown size={14} className="text-red-500" />
-                    )}
-                  </div>
-                </td>
-                <td className="py-3">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={row.avatar}
-                      alt={row.name}
-                      className="w-7 h-7 rounded-full object-cover"
-                    />
-                    <span className="text-slate-700">{row.name}</span>
-                  </div>
-                </td>
-                <td className="py-3 text-slate-600">{row.course}</td>
-                <td className="py-3 text-slate-600">{row.hour}</td>
-                <td className="py-3 font-semibold text-[#1e3a5f]">
-                  {row.point.toFixed(3)}
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
+                  No leaderboard data yet.
                 </td>
               </tr>
-            ))}
+            ) : (
+              rows.map((row) => (
+                <tr
+                  key={row.id}
+                  onClick={() => handleRowClick(row)}
+                  className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  <td className="py-3">
+                    <div className="flex items-center gap-1 text-slate-700">
+                      <span>{row.rank}</span>
+                      {row.trend === 'up' ? (
+                        <TrendingUp size={14} className="text-green-500" />
+                      ) : (
+                        <TrendingDown size={14} className="text-red-500" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={row.avatar}
+                        alt={row.name}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+                      <span className="text-slate-700">{row.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 text-slate-600">{row.course}</td>
+                  <td className="py-3 text-slate-600">{row.hour}</td>
+                  <td className="py-3 font-semibold text-[#1e3a5f]">
+                    {Number(row.point).toFixed(3)}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

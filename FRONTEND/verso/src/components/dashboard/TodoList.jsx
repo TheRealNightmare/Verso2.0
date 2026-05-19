@@ -1,38 +1,69 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, X, Check } from 'lucide-react';
-import { todoItems as initialTodos } from '../../mocks/dashboard';
+import { listTodos, createTodo, updateTodo, deleteTodo } from '../../api/todos';
 
-const TodoList = () => {
-  const [items, setItems] = useState(initialTodos);
+const TodoList = ({ initialItems }) => {
+  const [items, setItems] = useState(initialItems ?? []);
+  const [loading, setLoading] = useState(!initialItems);
+  const [error, setError] = useState(null);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('');
 
-  const toggle = (id) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, done: !it.done } : it))
-    );
+  useEffect(() => {
+    if (initialItems) {
+      setItems(initialItems);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await listTodos();
+        if (!cancelled) setItems(data);
+      } catch (err) {
+        if (!cancelled) setError(err?.message || 'Failed to load todos.');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialItems]);
+
+  const toggle = async (item) => {
+    const next = !item.done;
+    setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, done: next } : it)));
+    try {
+      await updateTodo(item.id, { done: next });
+    } catch {
+      setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, done: !next } : it)));
+    }
   };
 
-  const remove = (id) => {
-    setItems((prev) => prev.filter((it) => it.id !== id));
+  const remove = async (item) => {
+    const snapshot = items;
+    setItems((prev) => prev.filter((it) => it.id !== item.id));
+    try {
+      await deleteTodo(item.id);
+    } catch {
+      setItems(snapshot);
+    }
   };
 
-  const submitNew = () => {
-    if (!newTitle.trim()) {
+  const submitNew = async () => {
+    const title = newTitle.trim();
+    if (!title) {
       setAdding(false);
       return;
     }
-    setItems((prev) => [
-      ...prev,
-      {
-        id: `t-${Date.now()}`,
-        title: newTitle.trim(),
-        subtitle: '',
-        time: newTime.trim(),
-        done: false,
-      },
-    ]);
+    const payload = { title, time: newTime.trim() || null, done: false };
+    try {
+      const created = await createTodo(payload);
+      setItems((prev) => [...prev, created]);
+    } catch (err) {
+      setError(err?.message || 'Failed to add task.');
+    }
     setNewTitle('');
     setNewTime('');
     setAdding(false);
@@ -52,15 +83,15 @@ const TodoList = () => {
         </button>
       </div>
 
+      {loading && <p className="text-xs text-slate-400">Loading…</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
+
       <ul className="space-y-3">
         {items.map((item) => (
-          <li
-            key={item.id}
-            className="group flex items-start gap-2"
-          >
+          <li key={item.id} className="group flex items-start gap-2">
             <button
               type="button"
-              onClick={() => toggle(item.id)}
+              onClick={() => toggle(item)}
               className={`mt-0.5 w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${
                 item.done
                   ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white'
@@ -82,15 +113,13 @@ const TodoList = () => {
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   {item.subtitle}
                   {item.subtitle && item.time && '  '}
-                  {item.time && (
-                    <span className="ml-1 text-slate-500">{item.time}</span>
-                  )}
+                  {item.time && <span className="ml-1 text-slate-500">{item.time}</span>}
                 </p>
               )}
             </div>
             <button
               type="button"
-              onClick={() => remove(item.id)}
+              onClick={() => remove(item)}
               className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"
               aria-label="Delete task"
             >

@@ -1,7 +1,5 @@
-import { wormProgress } from '../../mocks/dashboard';
-
-const WormProgress = () => {
-  const pct = Math.min(100, Math.max(0, (wormProgress.value / wormProgress.max) * 100));
+const WormProgress = ({ value = 0, max = 100 }) => {
+  const pct = Math.min(100, Math.max(0, (value / max) * 100));
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">

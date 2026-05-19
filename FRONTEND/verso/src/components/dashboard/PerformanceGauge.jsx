@@ -1,19 +1,24 @@
 import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { ChevronDown } from 'lucide-react';
-import { performance as perfMock } from '../../mocks/dashboard';
 
-const RANGES = ['Weekly', 'Monthly', 'Yearly'];
+const RANGES = [
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Yearly', value: 'yearly' },
+];
 
-const PerformanceGauge = () => {
-  const [range, setRange] = useState('Monthly');
+const PerformanceGauge = ({ data, range = 'monthly', onRangeChange }) => {
   const [open, setOpen] = useState(false);
-
-  const filled = (perfMock.point / perfMock.max) * 100;
-  const data = [
+  const point = data?.point ?? 0;
+  const max = data?.max ?? 10;
+  const filled = Math.min(100, (point / max) * 100);
+  const chartData = [
     { name: 'progress', value: filled },
     { name: 'rest', value: 100 - filled },
   ];
+
+  const currentLabel = RANGES.find((r) => r.value === range)?.label ?? 'Monthly';
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 h-full flex flex-col">
@@ -30,24 +35,24 @@ const PerformanceGauge = () => {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-1 text-xs text-slate-600 px-2 py-1 rounded-md hover:bg-slate-100"
           >
-            {range}
+            {currentLabel}
             <ChevronDown size={14} />
           </button>
           {open && (
             <div className="absolute right-0 top-full mt-1 bg-white border border-slate-200 rounded-md shadow-md z-10 w-24">
               {RANGES.map((r) => (
                 <button
-                  key={r}
+                  key={r.value}
                   type="button"
                   onClick={() => {
-                    setRange(r);
+                    onRangeChange?.(r.value);
                     setOpen(false);
                   }}
                   className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-slate-100 ${
-                    range === r ? 'text-[#1e3a5f] font-semibold' : 'text-slate-600'
+                    range === r.value ? 'text-[#1e3a5f] font-semibold' : 'text-slate-600'
                   }`}
                 >
-                  {r}
+                  {r.label}
                 </button>
               ))}
             </div>
@@ -59,7 +64,7 @@ const PerformanceGauge = () => {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="80%"
               innerRadius={55}
@@ -76,7 +81,7 @@ const PerformanceGauge = () => {
         </ResponsiveContainer>
         <div className="absolute inset-x-0 bottom-2 text-center">
           <p className="text-xs text-slate-500">Your Point:</p>
-          <p className="text-lg font-bold text-[#1e3a5f]">{perfMock.point.toFixed(3)}</p>
+          <p className="text-lg font-bold text-[#1e3a5f]">{Number(point).toFixed(3)}</p>
         </div>
       </div>
     </div>
