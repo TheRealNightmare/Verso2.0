@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookContentController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ReviewController;
@@ -43,6 +44,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Favorites
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+
+    // Events
+    Route::get   ('/events',      [EventController::class, 'index']);
+    Route::get   ('/events/{id}', [EventController::class, 'show']);
+    Route::post  ('/events',      [EventController::class, 'store']);
+    Route::post  ('/events/{id}', [EventController::class, 'update']); // multipart PUT via _method
+    Route::delete('/events/{id}', [EventController::class, 'destroy']);
 
     // User uploads (local-device books — metadata only)
     Route::get('/uploads', [UserUploadController::class, 'index']);

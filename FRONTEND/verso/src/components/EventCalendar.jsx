@@ -30,7 +30,11 @@ const buildGrid = (viewDate) => {
 };
 
 const EventCalendar = ({ events = [], onEventClick }) => {
-  const [viewDate, setViewDate] = useState(new Date(2025, 3, 1));
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const todayIso = ymd(new Date());
 
   const eventsByDate = useMemo(() => {
     const map = {};
@@ -78,7 +82,9 @@ const EventCalendar = ({ events = [], onEventClick }) => {
               key={idx}
               className={`relative border-r border-b border-slate-200 min-h-[90px] p-1.5 ${
                 cell.inMonth ? 'bg-white' : 'bg-slate-50'
-              } ${(idx + 1) % 7 === 0 ? 'border-r-0' : ''}`}
+              } ${(idx + 1) % 7 === 0 ? 'border-r-0' : ''} ${
+                cell.iso === todayIso ? 'ring-2 ring-inset ring-[#4f83cc]' : ''
+              }`}
             >
               <span
                 className={`text-xs ${
