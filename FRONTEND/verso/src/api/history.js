@@ -4,10 +4,13 @@ export function fetchHistory() {
   return apiFetch('/history');
 }
 
-export function saveHistory(bookId, progress) {
+export function saveHistory({ bookId = null, uploadId = null, progress }) {
+  const body = { progress };
+  if (bookId != null) body.book_id = bookId;
+  if (uploadId != null) body.user_upload_id = uploadId;
   return apiFetch('/history', {
     method: 'POST',
-    body: JSON.stringify({ book_id: bookId, progress }),
+    body: JSON.stringify(body),
   });
 }
 

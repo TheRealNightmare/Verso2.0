@@ -38,19 +38,35 @@ const History = () => {
 
       <div className="flex flex-col gap-4">
         {historyBooks.map((entry) => {
+          const isUpload = !entry.book && entry.user_upload;
+          const upload = entry.user_upload;
           const book = entry.book;
+          const title = isUpload ? upload?.title : book?.title;
+          const author = isUpload ? (upload?.author || 'Unknown author') : book?.author;
+          const cover = isUpload ? null : book?.cover_image_url;
+          const readPath = isUpload ? `/reading/upload/${upload?.id}` : `/read/${book?.id}`;
+          const producer = isUpload ? `Local ${upload?.format?.toUpperCase()} file` : 'Project Gutenberg';
+          const genre = isUpload ? 'Personal library' : (book?.genre || 'Literature');
+          const rating = isUpload ? 0 : Math.round(book?.average_rating ?? 0);
+
           return (
             <div key={entry.id} className="bg-white p-4 rounded-xl shadow-sm">
               <div className="flex gap-5">
-                <img
-                  src={book?.cover_image_url || 'https://via.placeholder.com/120x180'}
-                  alt={book?.title}
-                  className="w-28 h-40 object-cover rounded-md shrink-0"
-                />
+                {cover ? (
+                  <img
+                    src={cover}
+                    alt={title}
+                    className="w-28 h-40 object-cover rounded-md shrink-0"
+                  />
+                ) : (
+                  <div className="w-28 h-40 rounded-md shrink-0 bg-linear-to-br from-slate-200 to-slate-400 flex items-center justify-center text-white text-xs font-bold uppercase">
+                    {isUpload ? upload?.format : 'Book'}
+                  </div>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
-                    <h3 className="text-lg font-semibold text-slate-800">{book?.title}</h3>
+                    <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
                     <X
                       className="text-slate-400 hover:text-red-500 cursor-pointer"
                       size={22}
@@ -58,18 +74,18 @@ const History = () => {
                     />
                   </div>
 
-                  <ReviewComponent rating={Math.round(book?.average_rating ?? 0)} count={0} />
+                  <ReviewComponent rating={rating} count={0} />
 
                   <BookInfoStats
-                    author={book?.author}
-                    genre={book?.genre || 'Literature'}
-                    producer="Project Gutenberg"
+                    author={author}
+                    genre={genre}
+                    producer={producer}
                     status={`${entry.progress}%`}
                   />
 
                   <div className="flex items-center gap-4 mt-2">
                     <button
-                      onClick={() => navigate(`/read/${book?.id}`)}
+                      onClick={() => navigate(readPath)}
                       className="px-4 py-1.5 rounded-lg bg-[#5b7c99] text-white text-sm hover:bg-[#4a6a85]"
                     >
                       Read

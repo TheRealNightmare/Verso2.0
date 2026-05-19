@@ -7,6 +7,7 @@ use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\UserUploadController;
 use Illuminate\Support\Facades\Route;
 
 // Auth
@@ -42,4 +43,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Favorites
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/favorites/toggle', [FavoriteController::class, 'toggle']);
+
+    // User uploads (local-device books — metadata only)
+    Route::get('/uploads', [UserUploadController::class, 'index']);
+    Route::post('/uploads', [UserUploadController::class, 'store']);
+    Route::delete('/uploads/{id}', [UserUploadController::class, 'destroy']);
 });
