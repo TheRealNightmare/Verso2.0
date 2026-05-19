@@ -1,17 +1,58 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import BookInfoStats from '../components/BookInfoStats';
 import ActionButtons from '../components/ActionButtons';
 import ReviewComponent from '../components/ReviewComponent';
 import CommentComponent from '../components/CommentComponent';
-// TODO: replace getBookById with fetchBook(id) when API is ready
-import { getBookById } from '../mocks/books';
+import { fetchBook } from '../api/books';
+
+const avatarFor = (name) =>
+  `https://i.pravatar.cc/64?u=${encodeURIComponent(name || 'anon')}`;
 
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const book = getBookById(id);
+  const [book, setBook] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetchBook(id)
+      .then((data) => {
+        if (cancelled) return;
+        setBook(data);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.message || 'Failed to load book.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (loading) {
+    return <p className="px-2 py-6 text-sm text-gray-500">Loading book...</p>;
+  }
+  if (error || !book) {
+    return (
+      <p className="px-2 py-6 text-sm text-red-600">
+        {error || 'Book not found.'}
+      </p>
+    );
+  }
+
+  const comments = (book.reviews || []).map((r) => ({
+    id: r.id,
+    user: r.user?.name || 'Anonymous',
+    time: r.created_at,
+    text: r.comment,
+    avatar: avatarFor(r.user?.name),
+  }));
 
   return (
     <div className="px-2">
@@ -43,7 +84,7 @@ const BookDetails = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-3">{book.title}</h1>
 
-          <ReviewComponent rating={book.rating} count={book.reviews_count} />
+          <ReviewComponent rating={book.average_rating} count={book.reviews_count} />
 
           <BookInfoStats
             author={book.author}
@@ -58,11 +99,11 @@ const BookDetails = () => {
 
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-slate-800">
-              Comment ({book.comments?.length ?? 0})
+              Comment ({comments.length})
             </h3>
           </div>
 
-          {(book.comments || []).map((c) => (
+          {comments.map((c) => (
             <CommentComponent
               key={c.id}
               user={c.user}
