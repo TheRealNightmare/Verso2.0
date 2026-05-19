@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReadingHistory extends Model
 {
-    protected $fillable = ['user_id', 'book_id', 'progress', 'last_read_at'];
+    protected $fillable = ['user_id', 'book_id', 'user_upload_id', 'progress', 'last_read_at'];
 
     protected $casts = [
         'last_read_at' => 'datetime',
@@ -20,5 +20,10 @@ class ReadingHistory extends Model
     public function book()
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function userUpload()
+    {
+        return $this->belongsTo(UserUpload::class);
     }
 }
