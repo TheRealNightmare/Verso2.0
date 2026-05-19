@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReadingHistory;
+use App\Models\UserUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class HistoryController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $history = ReadingHistory::with('book')
+        $history = ReadingHistory::with(['book', 'userUpload'])
             ->where('user_id', $request->user()->id)
             ->orderBy('last_read_at', 'desc')
             ->get();
@@ -21,12 +23,34 @@ class HistoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'book_id'  => ['required', 'integer', 'exists:books,id'],
-            'progress' => ['required', 'integer', 'min:0', 'max:100'],
+            'book_id'        => ['nullable', 'required_without:user_upload_id', 'integer', 'exists:books,id'],
+            'user_upload_id' => ['nullable', 'required_without:book_id', 'integer', 'exists:user_uploads,id'],
+            'progress'       => ['required', 'integer', 'min:0', 'max:100'],
         ]);
 
+        if (!empty($validated['book_id']) && !empty($validated['user_upload_id'])) {
+            throw ValidationException::withMessages([
+                'book_id' => 'Provide exactly one of book_id or user_upload_id.',
+            ]);
+        }
+
+        if (!empty($validated['user_upload_id'])) {
+            $owns = UserUpload::where('id', $validated['user_upload_id'])
+                ->where('user_id', $request->user()->id)
+                ->exists();
+            if (!$owns) {
+                throw ValidationException::withMessages([
+                    'user_upload_id' => 'Upload not found.',
+                ]);
+            }
+        }
+
+        $key = !empty($validated['book_id'])
+            ? ['user_id' => $request->user()->id, 'book_id' => $validated['book_id'], 'user_upload_id' => null]
+            : ['user_id' => $request->user()->id, 'book_id' => null, 'user_upload_id' => $validated['user_upload_id']];
+
         $history = ReadingHistory::updateOrCreate(
-            ['user_id' => $request->user()->id, 'book_id' => $validated['book_id']],
+            $key,
             ['progress' => $validated['progress'], 'last_read_at' => now()]
         );
 
