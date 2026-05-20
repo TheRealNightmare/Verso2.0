@@ -58,38 +58,6 @@ class CommunityMessageController extends Controller
         return response()->json($payload);
     }
 
-    public function threads(Request $request): JsonResponse
-    {
-        $userId = $request->user()->id;
-        $limit  = min((int) $request->query('limit', 20), 50);
-
-        $threads = CommunityMessage::query()
-            ->with('user:id,name,avatar_url,role')
-            ->whereNull('parent_id')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->get();
-
-        $threadIds   = $threads->pluck('id');
-        $replyCounts = $threadIds->isNotEmpty()
-            ? CommunityMessage::whereIn('parent_id', $threadIds)
-                ->select('parent_id', DB::raw('COUNT(*) as cnt'), DB::raw('MAX(created_at) as last_reply_at'))
-                ->groupBy('parent_id')
-                ->get()
-                ->keyBy('parent_id')
-            : collect();
-
-        return response()->json([
-            'threads' => $threads->map(function (CommunityMessage $m) use ($replyCounts, $userId) {
-                $shaped = $this->shape($m, $userId);
-                $info   = $replyCounts->get($m->id);
-                $shaped['replyCount']  = $info ? (int) $info->cnt : 0;
-                $shaped['lastReplyAt'] = $info?->last_reply_at;
-                return $shaped;
-            }),
-        ]);
-    }
-
     public function store(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
