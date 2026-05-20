@@ -43,6 +43,14 @@ export function getEcho() {
   return echoInstance;
 }
 
+export function getSocketId() {
+  try {
+    return echoInstance?.socketId?.() || null;
+  } catch {
+    return null;
+  }
+}
+
 export function disconnectEcho() {
   if (echoInstance) {
     echoInstance.disconnect();

@@ -1,13 +1,17 @@
+import { getSocketId } from '../lib/echo';
+
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 export async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('auth_token');
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const socketId = getSocketId();
 
   const headers = {
     'Accept': 'application/json',
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(socketId ? { 'X-Socket-ID': socketId } : {}),
     ...options.headers,
   };
 
