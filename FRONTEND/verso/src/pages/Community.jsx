@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import CommunityInfoCard from '../components/community/CommunityInfoCard';
-import RecentThreads from '../components/community/RecentThreads';
 import CommunityMessageItem from '../components/community/CommunityMessageItem';
 import MessageComposer from '../components/community/MessageComposer';
-import ThreadView from '../components/community/ThreadView';
 import {
   getCommunityInfo,
   listMessages,
-  listThreads,
   sendTextMessage,
   sendAudioMessage,
   sendImageMessage,
@@ -17,21 +14,24 @@ import {
   pingPresence,
 } from '../api/community';
 import { getEcho, disconnectEcho } from '../lib/echo';
+import { useAuth } from '../context/AuthContext';
 
 const INFO_POLL_MS = 8000;
-const THREADS_POLL_MS = 12000;
+const FEED_POLL_MS = 5000;
 const PRESENCE_PING_MS = 30000;
 
+const upsert = (list, msg) => (list.some((m) => m.id === msg.id) ? list : [...list, msg]);
+
 const Community = () => {
+  const { user } = useAuth();
   const [info, setInfo] = useState(null);
   const [feed, setFeed] = useState([]);
-  const [threads, setThreads] = useState([]);
-  const [activeThreadId, setActiveThreadId] = useState(null);
-  const [threadParent, setThreadParent] = useState(null);
-  const [threadReplies, setThreadReplies] = useState([]);
-  const [replyTo, setReplyTo] = useState(null);
   const [error, setError] = useState(null);
   const feedEndRef = useRef(null);
+  // Hold the current user id in a ref so the realtime effect (deps []) always
+  // sees the latest value without re-subscribing to Echo.
+  const userIdRef = useRef(user?.id);
+  useEffect(() => { userIdRef.current = user?.id; }, [user]);
 
   const refreshInfo = useCallback(async () => {
     try { setInfo(await getCommunityInfo()); } catch (e) { /* non-fatal */ }
@@ -44,41 +44,20 @@ const Community = () => {
     } catch (e) { setError(e?.message || 'Failed to load feed'); }
   }, []);
 
-  const refreshThreads = useCallback(async () => {
-    try {
-      const { threads: list } = await listThreads(20);
-      setThreads(list);
-    } catch (e) { /* non-fatal */ }
-  }, []);
-
-  const refreshThread = useCallback(async (parentId) => {
-    try {
-      const { parent, messages } = await listMessages({ parentId, limit: 200 });
-      setThreadParent(parent);
-      setThreadReplies(messages);
-    } catch (e) { setError(e?.message || 'Failed to load thread'); }
-  }, []);
-
+  // Initial load + polling fallback (keeps feed in sync even if the WebSocket drops)
   useEffect(() => {
     refreshInfo();
     refreshFeed();
-    refreshThreads();
     const i = setInterval(refreshInfo, INFO_POLL_MS);
-    const t = setInterval(refreshThreads, THREADS_POLL_MS);
-    return () => { clearInterval(i); clearInterval(t); };
-  }, [refreshInfo, refreshFeed, refreshThreads]);
+    const f = setInterval(refreshFeed, FEED_POLL_MS);
+    return () => { clearInterval(i); clearInterval(f); };
+  }, [refreshInfo, refreshFeed]);
 
   useEffect(() => {
     pingPresence().catch(() => {});
     const id = setInterval(() => pingPresence().catch(() => {}), PRESENCE_PING_MS);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (!activeThreadId) return undefined;
-    refreshThread(activeThreadId);
-    return undefined;
-  }, [activeThreadId, refreshThread]);
 
   // Realtime via Echo
   useEffect(() => {
@@ -87,36 +66,20 @@ const Community = () => {
       const echo = getEcho();
       channel = echo.private('community');
       channel.listen('.message.sent', (data) => {
-        if (data.parentId) {
-          if (activeThreadId === data.parentId) {
-            setThreadReplies((prev) => [...prev, data]);
-          }
-          setThreads((prev) => prev.map((t) => t.id === data.parentId ? { ...t, replyCount: (t.replyCount || 0) + 1 } : t));
-        } else {
-          setFeed((prev) => [...prev, data]);
-          setThreads((prev) => [{ ...data, replyCount: 0 }, ...prev].slice(0, 20));
-        }
+        if (data.parentId) return; // flat group chat — ignore thread replies
+        // The broadcast payload's `mine` is computed for the sender, so recompute
+        // it for this client to keep bubble alignment correct (no right→left flash).
+        const msg = { ...data, mine: data.author?.id === userIdRef.current };
+        setFeed((prev) => upsert(prev, msg));
       });
       channel.listen('.message.updated', (data) => {
-        const apply = (m) => m.id === data.id ? { ...m, body: data.body, editedAt: data.editedAt } : m;
-        setFeed((prev) => prev.map(apply));
-        setThreads((prev) => prev.map(apply));
-        setThreadReplies((prev) => prev.map(apply));
-        setThreadParent((prev) => prev && prev.id === data.id ? { ...prev, body: data.body, editedAt: data.editedAt } : prev);
+        setFeed((prev) => prev.map((m) => (m.id === data.id ? { ...m, body: data.body, editedAt: data.editedAt } : m)));
       });
       channel.listen('.message.deleted', (data) => {
-        const drop = (list) => list.filter((m) => m.id !== data.id);
-        setFeed(drop);
-        setThreads(drop);
-        setThreadReplies(drop);
-        if (activeThreadId === data.id) { setActiveThreadId(null); setThreadParent(null); setThreadReplies([]); }
+        setFeed((prev) => prev.filter((m) => m.id !== data.id));
       });
       channel.listen('.reaction.toggled', (data) => {
-        const apply = (m) => m.id === data.messageId ? { ...m, reactions: data.reactions } : m;
-        setFeed((prev) => prev.map(apply));
-        setThreads((prev) => prev.map(apply));
-        setThreadReplies((prev) => prev.map(apply));
-        setThreadParent((prev) => prev && prev.id === data.messageId ? { ...prev, reactions: data.reactions } : prev);
+        setFeed((prev) => prev.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions } : m)));
       });
     } catch (e) {
       console.warn('Echo init failed; falling back to polling.', e);
@@ -128,75 +91,44 @@ const Community = () => {
       try { channel?.stopListening('.reaction.toggled'); } catch {}
       disconnectEcho();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [feed.length, threadReplies.length, activeThreadId]);
+  }, [feed.length]);
 
   const handleSendText = async (body) => {
-    const parentId = replyTo?.id || activeThreadId || null;
     try {
-      const created = await sendTextMessage(body, parentId);
-      if (parentId) {
-        if (activeThreadId === parentId) setThreadReplies((prev) => [...prev, created]);
-        setThreads((prev) => prev.map((t) => t.id === parentId ? { ...t, replyCount: (t.replyCount || 0) + 1 } : t));
-      } else {
-        setFeed((prev) => [...prev, created]);
-        refreshThreads();
-      }
-      setReplyTo(null);
+      const created = await sendTextMessage(body);
+      setFeed((prev) => upsert(prev, created));
     } catch (e) { setError(e?.message || 'Failed to send'); }
   };
 
   const handleSendAudio = async (file, dur) => {
-    const parentId = replyTo?.id || activeThreadId || null;
     try {
-      const created = await sendAudioMessage(file, dur, parentId);
-      if (parentId) {
-        if (activeThreadId === parentId) setThreadReplies((prev) => [...prev, created]);
-      } else {
-        setFeed((prev) => [...prev, created]);
-        refreshThreads();
-      }
-      setReplyTo(null);
+      const created = await sendAudioMessage(file, dur);
+      setFeed((prev) => upsert(prev, created));
     } catch (e) { setError(e?.message || 'Failed to send audio'); }
   };
 
   const handleSendImage = async (file, caption) => {
-    const parentId = replyTo?.id || activeThreadId || null;
     try {
-      const created = await sendImageMessage(file, caption, parentId);
-      if (parentId) {
-        if (activeThreadId === parentId) setThreadReplies((prev) => [...prev, created]);
-      } else {
-        setFeed((prev) => [...prev, created]);
-        refreshThreads();
-      }
-      setReplyTo(null);
+      const created = await sendImageMessage(file, caption);
+      setFeed((prev) => upsert(prev, created));
     } catch (e) { setError(e?.message || 'Failed to send image'); }
   };
 
   const handleReact = async (id, emoji) => {
     try {
       const { reactions } = await toggleReaction(id, emoji);
-      const apply = (m) => m.id === id ? { ...m, reactions } : m;
-      setFeed((prev) => prev.map(apply));
-      setThreads((prev) => prev.map(apply));
-      setThreadReplies((prev) => prev.map(apply));
-      setThreadParent((prev) => prev && prev.id === id ? { ...prev, reactions } : prev);
+      setFeed((prev) => prev.map((m) => (m.id === id ? { ...m, reactions } : m)));
     } catch (e) { setError(e?.message || 'Failed to react'); }
   };
 
   const handleEdit = async (id, body) => {
     try {
       const updated = await editMessage(id, body);
-      const apply = (m) => m.id === id ? { ...m, body: updated.body, editedAt: updated.editedAt } : m;
-      setFeed((prev) => prev.map(apply));
-      setThreads((prev) => prev.map(apply));
-      setThreadReplies((prev) => prev.map(apply));
-      setThreadParent((prev) => prev && prev.id === id ? { ...prev, body: updated.body, editedAt: updated.editedAt } : prev);
+      setFeed((prev) => prev.map((m) => (m.id === id ? { ...m, body: updated.body, editedAt: updated.editedAt } : m)));
     } catch (e) { setError(e?.message || 'Failed to edit'); }
   };
 
@@ -204,82 +136,43 @@ const Community = () => {
     if (!confirm('Delete this message?')) return;
     try {
       await deleteMessage(id);
-      const drop = (list) => list.filter((m) => m.id !== id);
-      setFeed(drop);
-      setThreads(drop);
-      setThreadReplies(drop);
-      if (activeThreadId === id) { setActiveThreadId(null); setThreadParent(null); setThreadReplies([]); }
+      setFeed((prev) => prev.filter((m) => m.id !== id));
     } catch (e) { setError(e?.message || 'Failed to delete'); }
   };
-
-  const openThread = (id) => setActiveThreadId(id);
-  const clearThread = () => { setActiveThreadId(null); setThreadParent(null); setThreadReplies([]); setReplyTo(null); };
 
   return (
     <div className="flex h-[calc(100vh-10rem)] bg-white rounded-xl overflow-hidden shadow-sm">
       <aside className="w-80 border-r border-slate-200 flex flex-col p-4 overflow-y-auto">
         <CommunityInfoCard info={info} />
-        <RecentThreads
-          threads={threads}
-          activeThreadId={activeThreadId}
-          onSelect={openThread}
-          onClear={clearThread}
-        />
       </aside>
 
       <section className="flex-1 flex flex-col">
-        <div className="px-5 py-3 border-b border-slate-200 flex items-center justify-between">
-          <div className="text-sm font-semibold text-slate-800">
-            {activeThreadId ? 'Thread' : 'Community feed'}
-          </div>
-          {activeThreadId && (
-            <button
-              type="button"
-              onClick={clearThread}
-              className="text-xs text-[#4f83cc] hover:underline"
-            >
-              ← Back to feed
-            </button>
-          )}
+        <div className="px-5 py-3 border-b border-slate-200 flex items-center">
+          <div className="text-sm font-semibold text-slate-800">Community feed</div>
         </div>
 
-        {activeThreadId ? (
-          <ThreadView
-            parent={threadParent}
-            replies={threadReplies}
-            onReact={handleReact}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ) : (
-          <div className="flex-1 overflow-y-auto px-4 py-3">
-            {feed.length === 0 ? (
-              <div className="text-sm text-slate-400 text-center py-10">No messages yet — say hi 👋</div>
-            ) : (
-              feed.map((m) => (
-                <CommunityMessageItem
-                  key={m.id}
-                  message={m}
-                  showReplyCount
-                  onReply={(id) => { setReplyTo({ id, authorName: m.author?.name }); openThread(id); }}
-                  onOpenThread={openThread}
-                  onReact={handleReact}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))
-            )}
-            <div ref={feedEndRef} />
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {feed.length === 0 ? (
+            <div className="text-sm text-slate-400 text-center py-10">No messages yet — say hi 👋</div>
+          ) : (
+            feed.map((m) => (
+              <CommunityMessageItem
+                key={m.id}
+                message={m}
+                onReact={handleReact}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            ))
+          )}
+          <div ref={feedEndRef} />
+        </div>
 
         <MessageComposer
           onSendText={handleSendText}
           onSendAudio={handleSendAudio}
           onSendImage={handleSendImage}
-          placeholder={activeThreadId ? 'Reply in thread…' : 'Message the community'}
-          replyingTo={replyTo}
-          onCancelReply={() => setReplyTo(null)}
+          placeholder="Message the community"
         />
 
         {error && (
