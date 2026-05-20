@@ -84,7 +84,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Community
     Route::get   ('/community/info',                            [CommunityController::class, 'info']);
-    Route::get   ('/community/threads',                         [CommunityMessageController::class, 'threads']);
     Route::get   ('/community/messages',                        [CommunityMessageController::class, 'index']);
     Route::post  ('/community/messages',                        [CommunityMessageController::class, 'store']);
     Route::patch ('/community/messages/{id}',                   [CommunityMessageController::class, 'update']);
