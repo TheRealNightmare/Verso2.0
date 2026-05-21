@@ -10,3 +10,9 @@ export function updateProfile(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function updateProfilePhoto(file) {
+  const fd = new FormData();
+  fd.append('photo', file);
+  return apiFetch('/profile/photo', { method: 'POST', body: fd });
+}
