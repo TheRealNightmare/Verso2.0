@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnnotationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookContentController;
@@ -35,6 +36,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Book content (login required to read)
     Route::get('/books/{id}/content', [BookContentController::class, 'show']);
+
+    // Annotations (per-page highlights + notes)
+    Route::get   ('/books/{bookId}/annotations', [AnnotationController::class, 'index']);
+    Route::post  ('/books/{bookId}/annotations', [AnnotationController::class, 'store']);
+    Route::patch ('/annotations/{id}',           [AnnotationController::class, 'update']);
+    Route::delete('/annotations/{id}',           [AnnotationController::class, 'destroy']);
 
     // Reviews
     Route::post('/books/{bookId}/reviews', [ReviewController::class, 'store']);
