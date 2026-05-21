@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 
-const UploadAvatarModal = ({ open, onClose, onConfirm }) => {
+const UploadAvatarModal = ({ open, onClose, onConfirm, uploading = false }) => {
   const inputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -92,10 +92,10 @@ const UploadAvatarModal = ({ open, onClose, onConfirm }) => {
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={!file}
+            disabled={!file || uploading}
             className="px-8 py-2 rounded-lg bg-[#5b7c99] text-white text-sm font-medium hover:bg-[#4a6a85] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm
+            {uploading ? 'Uploading…' : 'Confirm'}
           </button>
         </div>
       </div>
