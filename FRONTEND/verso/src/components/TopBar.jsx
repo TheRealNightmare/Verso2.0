@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const TopBar = () => {
   const { user, logout } = useAuth();
 
-  const avatarUrl = 'https://i.pravatar.cc/64?img=12';
+  const avatarUrl = user?.avatarUrl || 'https://i.pravatar.cc/64?img=12';
 
   return (
     <header className="h-16 px-6 flex items-center justify-between bg-[#f8f6f2] border-b border-slate-200">
@@ -39,14 +39,23 @@ const TopBar = () => {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <img
-              src={avatarUrl}
-              alt={user.name}
-              className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow shrink-0"
-            />
-            <span className="text-sm text-slate-700 cursor-pointer hover:text-[#5b7c99]" onClick={logout}>
-              {user.name} (logout)
-            </span>
+            <Link to="/profile" className="flex items-center gap-3 group">
+              <img
+                src={avatarUrl}
+                alt={user.name}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow shrink-0"
+              />
+              <span className="text-sm text-slate-700 group-hover:text-[#5b7c99]">
+                {user.name}
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-xs text-slate-500 hover:text-[#5b7c99]"
+            >
+              logout
+            </button>
           </div>
         )}
       </div>
