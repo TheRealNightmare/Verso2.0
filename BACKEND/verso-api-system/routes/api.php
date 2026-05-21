@@ -82,8 +82,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/todos/{id}', [TodoController::class, 'destroy']);
 
     // Profile
-    Route::get  ('/profile', [ProfileController::class, 'show']);
-    Route::patch('/profile', [ProfileController::class, 'update']);
+    Route::get  ('/profile',       [ProfileController::class, 'show']);
+    Route::patch('/profile',       [ProfileController::class, 'update']);
+    Route::post ('/profile/photo', [ProfileController::class, 'updatePhoto']);
 
     // Reading sessions
     Route::post ('/reading-sessions',      [ReadingSessionController::class, 'store']);
