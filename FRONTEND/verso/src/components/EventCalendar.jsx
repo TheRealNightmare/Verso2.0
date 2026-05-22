@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { EVENT_CATEGORIES } from '../mocks/events';
+
+const FALLBACK_CAT = { bg: '#e2e8f0', text: '#1e293b' };
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THUR', 'FRI', 'SAT'];
 const MONTHS = [
@@ -29,7 +30,7 @@ const buildGrid = (viewDate) => {
   });
 };
 
-const EventCalendar = ({ events = [], onEventClick }) => {
+const EventCalendar = ({ events = [], categories = {}, onEventClick }) => {
   const [viewDate, setViewDate] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -95,7 +96,7 @@ const EventCalendar = ({ events = [], onEventClick }) => {
               </span>
 
               {dayEvents.map((ev) => {
-                const cat = EVENT_CATEGORIES[ev.category] || EVENT_CATEGORIES.movie;
+                const cat = categories[ev.category] || categories.movie || FALLBACK_CAT;
                 return (
                   <button
                     key={ev.id}

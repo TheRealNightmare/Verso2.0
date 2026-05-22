@@ -2,25 +2,37 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 const TopBar = () => {
   const { user, logout } = useAuth();
+  const confirm = useConfirm();
 
   const avatarUrl = user?.avatarUrl || 'https://i.pravatar.cc/64?img=12';
+
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: 'You will need to sign in again to access your library.',
+      confirmLabel: 'Log out',
+    });
+    if (ok) logout();
+  };
 
   return (
     <header className="h-16 px-6 flex items-center justify-between bg-[#f8f6f2] border-b border-slate-200">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
         <input
-          type="text"
+          type="search"
+          aria-label="Search books, names, authors"
           placeholder="Search book, name, author..."
           className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-100 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5b7c99]/30"
         />
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="relative p-2 rounded-full text-slate-600 hover:bg-slate-100">
+        <button aria-label="Notifications" className="relative p-2 rounded-full text-slate-600 hover:bg-slate-100">
           <Bell size={20} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
         </button>
@@ -51,7 +63,7 @@ const TopBar = () => {
             </Link>
             <button
               type="button"
-              onClick={logout}
+              onClick={handleLogout}
               className="text-xs text-slate-500 hover:text-[#5b7c99]"
             >
               logout

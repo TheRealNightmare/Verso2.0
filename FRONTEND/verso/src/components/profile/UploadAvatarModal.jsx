@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import Modal from '../ui/Modal';
+import Button from '../ui/Button';
 
 const UploadAvatarModal = ({ open, onClose, onConfirm, uploading = false }) => {
   const inputRef = useRef(null);
@@ -42,14 +44,7 @@ const UploadAvatarModal = ({ open, onClose, onConfirm, uploading = false }) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-xl rounded-2xl bg-[#eef2f5] p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal onClose={onClose} label="Upload new profile picture" panelClassName="bg-[#eef2f5] rounded-2xl shadow-xl p-6 max-w-xl">
         <div className="flex items-center justify-center relative mb-5">
           <button
             type="button"
@@ -89,17 +84,17 @@ const UploadAvatarModal = ({ open, onClose, onConfirm, uploading = false }) => {
         </div>
 
         <div className="flex justify-center mt-5">
-          <button
-            type="button"
+          <Button
             onClick={handleConfirm}
-            disabled={!file || uploading}
-            className="px-8 py-2 rounded-lg bg-[#5b7c99] text-white text-sm font-medium hover:bg-[#4a6a85] disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!file}
+            loading={uploading}
+            loadingLabel="Uploading…"
+            className="px-8"
           >
-            {uploading ? 'Uploading…' : 'Confirm'}
-          </button>
+            Confirm
+          </Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Calendar, MapPin, Camera, Video } from 'lucide-react';
-import { EVENT_CATEGORIES } from '../mocks/events';
 import { createEvent } from '../api/events';
+import { fetchEventCategories } from '../api/meta';
+import { useToast } from '../context/ToastContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Label = ({ children, required }) => (
   <label className="block text-xs text-slate-700 mb-1">
@@ -13,6 +15,8 @@ const Label = ({ children, required }) => (
 
 const EventCreate = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  usePageTitle('Create Event');
   const fileInputRef = useRef(null);
 
   const [title, setTitle] = useState('');
@@ -27,13 +31,21 @@ const EventCreate = () => {
   const [coverImage, setCoverImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState({});
+
+  useEffect(() => {
+    fetchEventCategories()
+      .then((data) => setCategories(data || {}))
+      .catch(console.error);
+  }, []);
 
   const inputCls =
     'w-full px-3 py-2.5 bg-white border border-slate-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#4f83cc]/30';
 
   const requiredFilled = title && host && date && from && to && category && location;
 
-  const handleCreate = async () => {
+  const handleCreate = async (e) => {
+    e?.preventDefault?.();
     if (!requiredFilled || submitting) return;
     setSubmitting(true);
     setError(null);
@@ -50,9 +62,11 @@ const EventCreate = () => {
       fd.append('location', location);
       if (coverImage) fd.append('cover_image', coverImage);
       await createEvent(fd);
+      toast.success('Event created');
       navigate('/events');
     } catch (e) {
       setError(e?.message || 'Failed to create event');
+      toast.error(e?.message || 'Failed to create event');
       setSubmitting(false);
     }
   };
@@ -67,7 +81,7 @@ const EventCreate = () => {
         Back
       </Link>
 
-      <div className="px-2 sm:px-8 py-2">
+      <form onSubmit={handleCreate} className="px-2 sm:px-8 py-2">
         {error && (
           <div className="mb-3 px-4 py-2 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
@@ -154,7 +168,7 @@ const EventCreate = () => {
                 className={inputCls}
               >
                 <option value="">Select a category</option>
-                {Object.values(EVENT_CATEGORIES).map((c) => (
+                {Object.values(categories).map((c) => (
                   <option key={c.key} value={c.key}>
                     {c.label}
                   </option>
@@ -226,20 +240,21 @@ const EventCreate = () => {
 
         <div className="flex justify-center gap-4">
           <button
+            type="button"
             onClick={() => navigate('/events')}
             className="px-8 py-2 rounded-md border border-slate-300 text-slate-700 text-sm hover:bg-slate-100"
           >
             Cancel
           </button>
           <button
-            onClick={handleCreate}
+            type="submit"
             disabled={!requiredFilled || submitting}
             className="px-8 py-2 rounded-md bg-[#4f83cc] text-white text-sm hover:bg-[#3f6ab0] disabled:bg-slate-300 disabled:cursor-not-allowed"
           >
             {submitting ? 'Creating…' : 'Create'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

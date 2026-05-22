@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { ConfirmProvider } from './context/ConfirmContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Footer from './components/Footer';
@@ -24,17 +27,17 @@ function AppContent() {
 
   const appRoutes = (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/events" element={<Event />} />
-      <Route path="/create-event" element={<EventCreate />} />
-      <Route path="/community" element={<Community />} />
-      <Route path="/book/:id" element={<BookDetails />} />
-      <Route path="/history" element={<History />} />
-      <Route path="/storage" element={<Storage />} />
-      <Route path="/read/:id" element={<ReadingPage />} />
-      <Route path="/reading/upload/:uploadId" element={<UploadReadingPage />} />
+      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
+      <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
+      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+      <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+      <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
+      <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
+      <Route path="/reading/upload/:uploadId" element={<ProtectedRoute><UploadReadingPage /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -47,9 +50,15 @@ function AppContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f8f6f2]">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[70] focus:rounded-lg focus:bg-[#5b7c99] focus:px-4 focus:py-2 focus:text-sm focus:text-white"
+      >
+        Skip to content
+      </a>
       <div className="flex flex-1 min-h-0">
         <Sidebar />
-        <main className="flex-1 flex flex-col min-w-0">
+        <main id="main" className="flex-1 flex flex-col min-w-0">
           {!isReadingMode && <TopBar />}
           <div className="flex-1 p-6">{appRoutes}</div>
         </main>
@@ -62,7 +71,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <ConfirmProvider>
+          <AppContent />
+        </ConfirmProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

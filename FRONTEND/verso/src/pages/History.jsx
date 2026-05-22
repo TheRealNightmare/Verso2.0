@@ -3,12 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import ReviewComponent from '../components/ReviewComponent';
 import BookInfoStats from '../components/BookInfoStats';
+import Button from '../components/ui/Button';
+import Spinner from '../components/ui/Spinner';
 import { fetchHistory, deleteHistory } from '../api/history';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const History = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [historyBooks, setHistoryBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  usePageTitle('History');
 
   useEffect(() => {
     fetchHistory()
@@ -17,16 +25,31 @@ const History = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const removeBook = async (id) => {
+  const removeBook = async (id, title) => {
+    const ok = await confirm({
+      title: 'Remove from history?',
+      message: `"${title}" will be removed from your reading history.`,
+      confirmLabel: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteHistory(id);
       setHistoryBooks((prev) => prev.filter((entry) => entry.id !== id));
+      toast.success('Removed from history');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove from history.');
     }
   };
 
-  if (loading) return <p className="p-8 text-slate-400">Loading history...</p>;
+  if (loading) {
+    return (
+      <div className="p-8 text-slate-400">
+        <Spinner label="Loading history…" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-2">
@@ -67,11 +90,14 @@ const History = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
-                    <X
-                      className="text-slate-400 hover:text-red-500 cursor-pointer"
-                      size={22}
-                      onClick={() => removeBook(entry.id)}
-                    />
+                    <button
+                      type="button"
+                      aria-label={`Remove ${title} from history`}
+                      onClick={() => removeBook(entry.id, title)}
+                      className="text-slate-400 hover:text-red-500 rounded p-0.5"
+                    >
+                      <X size={22} />
+                    </button>
                   </div>
 
                   <ReviewComponent rating={rating} count={0} />
@@ -84,12 +110,9 @@ const History = () => {
                   />
 
                   <div className="flex items-center gap-4 mt-2">
-                    <button
-                      onClick={() => navigate(readPath)}
-                      className="px-4 py-1.5 rounded-lg bg-[#5b7c99] text-white text-sm hover:bg-[#4a6a85]"
-                    >
+                    <Button onClick={() => navigate(readPath)} className="px-4 py-1.5">
                       Read
-                    </button>
+                    </Button>
                     <span className="text-xs text-slate-500">
                       Last read:{' '}
                       <strong className="text-slate-700">

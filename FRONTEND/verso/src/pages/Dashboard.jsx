@@ -9,10 +9,13 @@ import LeaderBoard from '../components/dashboard/LeaderBoard';
 import ProfileCard from '../components/dashboard/ProfileCard';
 import MiniCalendar from '../components/dashboard/MiniCalendar';
 import TodoList from '../components/dashboard/TodoList';
+import Spinner from '../components/ui/Spinner';
 import { getDashboardSummary } from '../api/dashboard';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  usePageTitle('Dashboard');
   const [summary, setSummary] = useState(null);
   const [range, setRange] = useState('monthly');
   const [loading, setLoading] = useState(true);
@@ -59,7 +62,9 @@ const Dashboard = () => {
 
   if (loading && !summary) {
     return (
-      <div className="p-8 text-center text-slate-500 text-sm">Loading dashboard…</div>
+      <div className="p-8 text-center text-slate-500 text-sm">
+        <Spinner label="Loading dashboard…" />
+      </div>
     );
   }
 

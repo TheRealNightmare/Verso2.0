@@ -4,12 +4,17 @@ import { X, Plus, BookOpen } from 'lucide-react';
 import { fetchBookmarks, removeBookmark } from '../api/bookmarks';
 import { fetchUploads, registerUpload, removeUpload } from '../api/uploads';
 import { putFile, deleteFile, sha256Hex } from '../lib/uploadStore';
+import Spinner from '../components/ui/Spinner';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const ACCEPTED_EXTENSIONS = { txt: 'txt', epub: 'epub', pdf: 'pdf' };
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 const Storage = () => {
   const [tab, setTab] = useState('uploads');
+  usePageTitle('Storage');
 
   return (
     <div className="px-2">
@@ -50,6 +55,8 @@ function UploadsTab() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchUploads()
@@ -94,25 +101,42 @@ function UploadsTab() {
         if (prev.some((u) => u.id === row.id)) return prev;
         return [row, ...prev];
       });
+      toast.success(`"${title}" added to your library`);
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to add book.');
+      toast.error(err.message || 'Failed to add book.');
     } finally {
       setBusy(false);
     }
   };
 
   const handleRemove = async (upload) => {
+    const ok = await confirm({
+      title: 'Delete this book?',
+      message: `"${upload.title}" will be removed from your library. This can't be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await removeUpload(upload.id);
       await deleteFile(upload.file_hash);
       setUploads((prev) => prev.filter((u) => u.id !== upload.id));
+      toast.success(`"${upload.title}" deleted`);
     } catch (err) {
       console.error(err);
+      toast.error('Failed to delete book.');
     }
   };
 
-  if (loading) return <p className="p-4 text-slate-400">Loading uploads...</p>;
+  if (loading) {
+    return (
+      <div className="p-4 text-slate-400">
+        <Spinner label="Loading uploads…" />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -153,6 +177,7 @@ function UploadsTab() {
                 </Link>
                 <button
                   onClick={() => handleRemove(u)}
+                  aria-label={`Delete ${u.title}`}
                   className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center"
                 >
                   <X size={14} color="#fff" />
@@ -173,6 +198,8 @@ function UploadsTab() {
 function BookmarksTab() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => {
     fetchBookmarks()
@@ -181,16 +208,31 @@ function BookmarksTab() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleRemove = async (bookId) => {
+  const handleRemove = async (book) => {
+    const ok = await confirm({
+      title: 'Remove bookmark?',
+      message: `"${book.title}" will be removed from your bookmarks.`,
+      confirmLabel: 'Remove',
+      danger: true,
+    });
+    if (!ok) return;
     try {
-      await removeBookmark(bookId);
-      setBooks((prev) => prev.filter((b) => b.id !== bookId));
+      await removeBookmark(book.id);
+      setBooks((prev) => prev.filter((b) => b.id !== book.id));
+      toast.success('Bookmark removed');
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove bookmark.');
     }
   };
 
-  if (loading) return <p className="p-4 text-slate-400">Loading bookmarks...</p>;
+  if (loading) {
+    return (
+      <div className="p-4 text-slate-400">
+        <Spinner label="Loading bookmarks…" />
+      </div>
+    );
+  }
   if (books.length === 0) return <p className="text-slate-400 py-4">No saved books yet.</p>;
 
   return (
@@ -206,7 +248,8 @@ function BookmarksTab() {
               />
             </Link>
             <button
-              onClick={() => handleRemove(book.id)}
+              onClick={() => handleRemove(book)}
+              aria-label={`Remove bookmark for ${book.title}`}
               className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center"
             >
               <X size={14} color="#fff" />

@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, Eye, EyeOff } from 'lucide-react';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  usePageTitle('Log in');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -85,19 +87,15 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className={`${inputCls} pr-10`}
               />
-              {showPassword ? (
-                <Eye
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowPassword(false)}
-                />
-              ) : (
-                <EyeOff
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowPassword(true)}
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+              >
+                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
             </div>
           </div>
 

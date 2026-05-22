@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchUploads } from '../api/uploads';
 import { getFile, putFile, sha256Hex } from '../lib/uploadStore';
 import { saveHistory } from '../api/history';
+import Spinner from '../components/ui/Spinner';
+import usePageTitle from '../hooks/usePageTitle';
 
 const CHARS_PER_PAGE = 1800;
 
@@ -24,6 +26,7 @@ const UploadReadingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [needsReupload, setNeedsReupload] = useState(false);
+  usePageTitle(upload?.title || 'Reading');
 
   const [textPages, setTextPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -178,7 +181,13 @@ const UploadReadingPage = () => {
     }
   };
 
-  if (loading) return <p className="px-6 py-6 text-sm text-gray-500">Loading book...</p>;
+  if (loading) {
+    return (
+      <div className="px-6 py-6 text-sm text-gray-500">
+        <Spinner label="Loading book…" />
+      </div>
+    );
+  }
   if (error) return <p className="px-6 py-6 text-sm text-red-600">{error}</p>;
 
   if (needsReupload) {

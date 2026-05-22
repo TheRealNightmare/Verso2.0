@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Undo2 } from 'lucide-react';
+import usePageTitle from '../hooks/usePageTitle';
 
 function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  usePageTitle('Register');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,11 +52,14 @@ function Register() {
     <div className="min-h-screen flex items-center justify-center bg-[#f8f6f2] px-4 py-10">
       <div className="relative w-full max-w-md bg-white p-10 rounded-2xl shadow-md">
         <div className="absolute top-4 right-4">
-          <Undo2
-            size={28}
-            className="text-slate-500 hover:text-[#5b7c99] cursor-pointer"
+          <button
+            type="button"
             onClick={() => navigate('/login')}
-          />
+            aria-label="Back to log in"
+            className="text-slate-500 hover:text-[#5b7c99] rounded p-0.5"
+          >
+            <Undo2 size={28} />
+          </button>
         </div>
 
         <h1 className="text-2xl font-bold text-slate-800">Registration</h1>
@@ -100,19 +105,15 @@ function Register() {
                 placeholder="Password"
                 className={`${inputCls} pr-10`}
               />
-              {showPassword ? (
-                <Eye
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowPassword(false)}
-                />
-              ) : (
-                <EyeOff
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowPassword(true)}
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+              >
+                {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
             </div>
           </div>
 
@@ -127,19 +128,15 @@ function Register() {
                 placeholder="Confirm Password"
                 className={`${inputCls} pr-10`}
               />
-              {showConfirmPassword ? (
-                <Eye
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowConfirmPassword(false)}
-                />
-              ) : (
-                <EyeOff
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 cursor-pointer"
-                  onClick={() => setShowConfirmPassword(true)}
-                />
-              )}
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((s) => !s)}
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showConfirmPassword}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+              >
+                {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
             </div>
           </div>
 
