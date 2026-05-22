@@ -5,7 +5,10 @@ import { getProfile, updateProfile, updateProfilePhoto } from '../api/profile';
 import ProfileForm from '../components/profile/ProfileForm';
 import AvatarPanel from '../components/profile/AvatarPanel';
 import UploadAvatarModal from '../components/profile/UploadAvatarModal';
-import SuccessToast from '../components/profile/SuccessToast';
+import Spinner from '../components/ui/Spinner';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const emptyForm = {
   email: '',
@@ -19,6 +22,9 @@ const emptyForm = {
 const Profile = () => {
   const { logout, updateUser } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
+  const confirm = useConfirm();
+  usePageTitle('Profile');
 
   const [profile, setProfile] = useState(emptyForm);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -28,7 +34,6 @@ const Profile = () => {
   const [errors, setErrors] = useState({});
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [toast, setToast] = useState({ show: false, message: '' });
 
   useEffect(() => {
     let active = true;
@@ -56,8 +61,6 @@ const Profile = () => {
     };
   }, []);
 
-  const showToast = (message) => setToast({ show: true, message });
-
   const handleConfirm = async (values) => {
     setSubmitting(true);
     setErrors({});
@@ -77,10 +80,10 @@ const Profile = () => {
       const data = await updateProfile(payload);
       setProfile((p) => ({ ...p, currentPassword: '', password: '' }));
       updateUser({ name: data.name });
-      showToast('Updated successfully');
+      toast.success('Updated successfully');
     } catch (err) {
       setErrors(err?.errors || {});
-      showToast(err?.message || 'Update failed');
+      toast.error(err?.message || 'Update failed');
     } finally {
       setSubmitting(false);
     }
@@ -93,15 +96,21 @@ const Profile = () => {
       setAvatarUrl(data.avatarUrl);
       updateUser({ avatarUrl: data.avatarUrl });
       setUploadOpen(false);
-      showToast('Photo updated');
+      toast.success('Photo updated');
     } catch (err) {
-      showToast(err?.message || 'Photo upload failed');
+      toast.error(err?.message || 'Photo upload failed');
     } finally {
       setUploading(false);
     }
   };
 
   const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: 'You will need to sign in again to access your library.',
+      confirmLabel: 'Log out',
+    });
+    if (!ok) return;
     try {
       await logout();
     } finally {
@@ -110,7 +119,11 @@ const Profile = () => {
   };
 
   if (loading) {
-    return <div className="py-20 text-center text-slate-500">Loading profile…</div>;
+    return (
+      <div className="py-20 text-center text-slate-500">
+        <Spinner label="Loading profile…" />
+      </div>
+    );
   }
 
   if (loadError) {
@@ -119,12 +132,6 @@ const Profile = () => {
 
   return (
     <div className="relative w-full">
-      <SuccessToast
-        message={toast.message}
-        show={toast.show}
-        onDismiss={() => setToast((t) => ({ ...t, show: false }))}
-      />
-
       <div className="flex flex-col lg:flex-row items-center justify-center gap-16 lg:gap-24 py-10">
         <ProfileForm
           initialValues={profile}

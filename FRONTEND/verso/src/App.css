@@ -27,3 +27,11 @@ body {
 .animate-page-turn {
   animation: pageFade 220ms ease-out;
 }
+
+/* Visible keyboard focus across the app (Rule 2: universal usability). Only shows for
+   keyboard navigation, so mouse users see no change to the existing look. */
+:focus-visible {
+  outline: 2px solid #5b7c99;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

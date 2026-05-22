@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import BookSection from '../components/BookSection';
+import Spinner from '../components/ui/Spinner';
 import { fetchHomeBooks } from '../api/books';
+import usePageTitle from '../hooks/usePageTitle';
 
 function Home() {
+  usePageTitle('Home');
   const [sections, setSections] = useState({
     latest: [],
     recommended: [],
@@ -52,7 +55,9 @@ function Home() {
         </div>
       )}
       {loading ? (
-        <p className="px-2 py-6 text-sm text-gray-500">Loading books...</p>
+        <div className="px-2 py-6 text-sm text-gray-500">
+          <Spinner label="Loading books…" />
+        </div>
       ) : (
         <>
           <BookSection title="Latests" books={toCards(sections.latest)} />

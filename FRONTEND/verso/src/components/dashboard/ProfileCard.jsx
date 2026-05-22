@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Edit2, Shield, X } from 'lucide-react';
 import { updateProfile } from '../../api/profile';
+import Modal from '../ui/Modal';
+import { useToast } from '../../context/ToastContext';
 
 const ProfileCard = ({ profile, onUpdated }) => {
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name ?? '');
   const [role, setRole] = useState(profile?.role ?? '');
@@ -29,8 +32,10 @@ const ProfileCard = ({ profile, onUpdated }) => {
       });
       onUpdated?.(updated);
       setEditing(false);
+      toast.success('Profile updated');
     } catch (err) {
       setError(err?.message || 'Failed to save profile.');
+      toast.error(err?.message || 'Failed to save profile.');
     } finally {
       setSaving(false);
     }
@@ -70,8 +75,7 @@ const ProfileCard = ({ profile, onUpdated }) => {
       </div>
 
       {editing && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5">
+        <Modal onClose={() => setEditing(false)} label="Edit Profile" panelClassName="bg-white rounded-2xl shadow-xl max-w-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-[#1e3a5f]">Edit Profile</h3>
               <button
@@ -113,12 +117,14 @@ const ProfileCard = ({ profile, onUpdated }) => {
               {error && <p className="text-xs text-red-500">{error}</p>}
               <div className="flex justify-end gap-2 pt-1">
                 <button
+                  type="button"
                   onClick={() => setEditing(false)}
                   className="text-xs px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleSave}
                   disabled={saving}
                   className="text-xs px-3 py-1.5 rounded-md bg-[#1e3a5f] text-white hover:bg-[#16304f] disabled:opacity-60"
@@ -127,8 +133,7 @@ const ProfileCard = ({ profile, onUpdated }) => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

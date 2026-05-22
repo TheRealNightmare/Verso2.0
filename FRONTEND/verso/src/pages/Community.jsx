@@ -15,6 +15,9 @@ import {
 } from '../api/community';
 import { getEcho, disconnectEcho } from '../lib/echo';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
+import usePageTitle from '../hooks/usePageTitle';
 
 const INFO_POLL_MS = 8000;
 const FEED_POLL_MS = 5000;
@@ -24,6 +27,9 @@ const upsert = (list, msg) => (list.some((m) => m.id === msg.id) ? list : [...li
 
 const Community = () => {
   const { user } = useAuth();
+  const toast = useToast();
+  const confirm = useConfirm();
+  usePageTitle('Community');
   const [info, setInfo] = useState(null);
   const [feed, setFeed] = useState([]);
   const [error, setError] = useState(null);
@@ -133,11 +139,21 @@ const Community = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this message?')) return;
+    const ok = await confirm({
+      title: 'Delete this message?',
+      message: 'This message will be permanently removed from the feed.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteMessage(id);
       setFeed((prev) => prev.filter((m) => m.id !== id));
-    } catch (e) { setError(e?.message || 'Failed to delete'); }
+      toast.success('Message deleted');
+    } catch (e) {
+      setError(e?.message || 'Failed to delete');
+      toast.error(e?.message || 'Failed to delete message.');
+    }
   };
 
   return (

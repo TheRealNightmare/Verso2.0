@@ -5,7 +5,9 @@ import BookInfoStats from '../components/BookInfoStats';
 import ActionButtons from '../components/ActionButtons';
 import ReviewComponent from '../components/ReviewComponent';
 import CommentComponent from '../components/CommentComponent';
+import Spinner from '../components/ui/Spinner';
 import { fetchBook } from '../api/books';
+import usePageTitle from '../hooks/usePageTitle';
 
 const avatarFor = (name) =>
   `https://i.pravatar.cc/64?u=${encodeURIComponent(name || 'anon')}`;
@@ -16,6 +18,7 @@ const BookDetails = () => {
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  usePageTitle(book?.title || 'Book');
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +39,11 @@ const BookDetails = () => {
   }, [id]);
 
   if (loading) {
-    return <p className="px-2 py-6 text-sm text-gray-500">Loading book...</p>;
+    return (
+      <div className="px-2 py-6 text-sm text-gray-500">
+        <Spinner label="Loading book…" />
+      </div>
+    );
   }
   if (error || !book) {
     return (

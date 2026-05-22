@@ -2,11 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import EventCalendar from '../components/EventCalendar';
 import EventDetailModal from '../components/EventDetailModal';
+import Spinner from '../components/ui/Spinner';
 import { fetchEvents } from '../api/events';
+import { fetchEventCategories } from '../api/meta';
+import usePageTitle from '../hooks/usePageTitle';
 
 const Event = () => {
+  usePageTitle('Events');
   const [selected, setSelected] = useState(null);
   const [events, setEvents] = useState([]);
+  const [categories, setCategories] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -29,6 +34,12 @@ const Event = () => {
     return () => window.removeEventListener('focus', onFocus);
   }, [load]);
 
+  useEffect(() => {
+    fetchEventCategories()
+      .then((data) => setCategories(data || {}))
+      .catch(console.error);
+  }, []);
+
   const upcoming = useMemo(() => {
     const todayIso = new Date().toISOString().slice(0, 10);
     return events
@@ -42,10 +53,11 @@ const Event = () => {
       <div className="flex items-center gap-4 mb-4">
         <h1 className="text-2xl font-bold text-slate-800">Events:</h1>
       </div>
-      <Link to="/create-event">
-        <button className="mb-4 px-5 py-2 rounded-lg bg-[#4f83cc] text-white text-sm hover:bg-[#3f6ab0]">
-          Create New
-        </button>
+      <Link
+        to="/create-event"
+        className="inline-block mb-4 px-5 py-2 rounded-lg bg-[#4f83cc] text-white text-sm hover:bg-[#3f6ab0]"
+      >
+        Create New
       </Link>
 
       {error && (
@@ -54,13 +66,15 @@ const Event = () => {
         </div>
       )}
 
-      <EventCalendar events={events} onEventClick={setSelected} />
+      <EventCalendar events={events} categories={categories} onEventClick={setSelected} />
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-slate-800 mb-3">Up coming events:</h2>
         <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
           {loading ? (
-            <div className="text-sm text-slate-500">Loading…</div>
+            <div className="text-sm text-slate-500">
+              <Spinner label="Loading…" />
+            </div>
           ) : upcoming.length === 0 ? (
             <div className="text-sm text-slate-500">No upcoming events.</div>
           ) : (
@@ -81,7 +95,7 @@ const Event = () => {
         </div>
       </div>
 
-      <EventDetailModal event={selected} onClose={() => setSelected(null)} />
+      <EventDetailModal event={selected} categories={categories} onClose={() => setSelected(null)} />
     </div>
   );
 };

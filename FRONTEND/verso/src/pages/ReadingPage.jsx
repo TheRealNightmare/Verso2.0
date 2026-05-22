@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3, Trash2, X } from 'lucide-react';
 import { fetchBookContent } from '../api/content';
+import { saveHistory } from '../api/history';
 import {
   fetchAnnotations,
   createAnnotation,
   updateAnnotation,
   deleteAnnotation,
 } from '../api/annotations';
+import Spinner from '../components/ui/Spinner';
+import usePageTitle from '../hooks/usePageTitle';
 
 const CHARS_PER_PAGE = 1800;
 
@@ -90,6 +93,7 @@ const ReadingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  usePageTitle('Reading');
   const [isAnnotationsOpen, setIsAnnotationsOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
 
@@ -100,6 +104,8 @@ const ReadingPage = () => {
 
   const leftRef = useRef(null);
   const rightRef = useRef(null);
+  const saveTimerRef = useRef(null);
+  const lastProgressRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +131,29 @@ const ReadingPage = () => {
   }, [id, navigate]);
 
   const pages = useMemo(() => chaptersToPages(chapters), [chapters]);
+
+  const queueProgress = (progress) => {
+    if (progress === lastProgressRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      lastProgressRef.current = progress;
+      saveHistory({ bookId: Number(id), progress }).catch(console.error);
+    }, 800);
+  };
+
+  // Record reading progress on open (page 0) and on every page turn.
+  useEffect(() => {
+    if (!pages.length) return;
+    const progress = Math.max(
+      0,
+      Math.min(100, Math.round(((currentPage + 1) / pages.length) * 100)),
+    );
+    queueProgress(progress);
+  }, [currentPage, pages.length]);
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, []);
 
   const goToPage = (next) => {
     if (!pages.length) return;
@@ -215,7 +244,11 @@ const ReadingPage = () => {
   };
 
   if (loading) {
-    return <p className="px-6 py-6 text-sm text-gray-500">Loading book...</p>;
+    return (
+      <div className="px-6 py-6 text-sm text-gray-500">
+        <Spinner label="Loading book…" />
+      </div>
+    );
   }
   if (error) {
     return <p className="px-6 py-6 text-sm text-red-600">{error}</p>;

@@ -1,5 +1,7 @@
 import { X } from 'lucide-react';
-import { EVENT_CATEGORIES } from '../mocks/events';
+import Modal from './ui/Modal';
+
+const FALLBACK_CAT = { bg: '#e2e8f0', text: '#1e293b', label: '' };
 
 const formatDate = (iso) => {
   const d = new Date(iso);
@@ -11,19 +13,12 @@ const formatDate = (iso) => {
   });
 };
 
-const EventDetailModal = ({ event, onClose }) => {
+const EventDetailModal = ({ event, categories = {}, onClose }) => {
   if (!event) return null;
-  const cat = EVENT_CATEGORIES[event.category] || EVENT_CATEGORIES.movie;
+  const cat = categories[event.category] || categories.movie || FALLBACK_CAT;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal onClose={onClose} label={event.title} panelClassName="bg-white rounded-xl shadow-lg overflow-hidden max-w-md">
         <div
           className="px-5 py-4 flex items-center justify-between"
           style={{ backgroundColor: cat.bg, color: cat.text }}
@@ -32,7 +27,7 @@ const EventDetailModal = ({ event, onClose }) => {
             <div className="text-xs uppercase tracking-wide opacity-80">{cat.label}</div>
             <h3 className="text-lg font-semibold">{event.title}</h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-black/10">
+          <button onClick={onClose} aria-label="Close" className="p-1 rounded hover:bg-black/10">
             <X size={18} />
           </button>
         </div>
@@ -79,8 +74,7 @@ const EventDetailModal = ({ event, onClose }) => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
