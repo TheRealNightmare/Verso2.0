@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Bookmark, Heart, Share2 } from 'lucide-react';
+import { BookOpen, Bookmark, Heart } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addBookmark, removeBookmark } from '../api/bookmarks';
 import { toggleFavorite } from '../api/favorites';
@@ -45,15 +45,6 @@ const ActionButtons = ({ bookId: propBookId, isBookmarked: initBookmarked = fals
     }
   };
 
-  const handleShareClick = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard');
-    } catch {
-      toast.error('Could not copy link.');
-    }
-  };
-
   return (
     <div className="flex items-center gap-3 my-4">
       <Button onClick={handleReadClick}>
@@ -77,14 +68,6 @@ const ActionButtons = ({ bookId: propBookId, isBookmarked: initBookmarked = fals
           className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
         >
           <Heart size={20} fill={favorited ? '#e74c3c' : 'none'} stroke={favorited ? '#e74c3c' : 'currentColor'} />
-        </button>
-
-        <button
-          onClick={handleShareClick}
-          aria-label="Copy link to this book"
-          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
-        >
-          <Share2 size={20} />
         </button>
       </div>
     </div>

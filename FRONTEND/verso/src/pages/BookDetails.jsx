@@ -5,8 +5,10 @@ import BookInfoStats from '../components/BookInfoStats';
 import ActionButtons from '../components/ActionButtons';
 import ReviewComponent from '../components/ReviewComponent';
 import CommentComponent from '../components/CommentComponent';
+import ReviewForm from '../components/ReviewForm';
 import Spinner from '../components/ui/Spinner';
 import { fetchBook } from '../api/books';
+import { useAuth } from '../context/AuthContext';
 import usePageTitle from '../hooks/usePageTitle';
 
 const avatarFor = (name) =>
@@ -15,6 +17,7 @@ const avatarFor = (name) =>
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,6 +41,12 @@ const BookDetails = () => {
     return () => { cancelled = true; };
   }, [id]);
 
+  const refresh = () => {
+    fetchBook(id)
+      .then(setBook)
+      .catch(() => {});
+  };
+
   if (loading) {
     return (
       <div className="px-2 py-6 text-sm text-gray-500">
@@ -60,6 +69,8 @@ const BookDetails = () => {
     text: r.comment,
     avatar: avatarFor(r.user?.name),
   }));
+
+  const existingReview = (book.reviews || []).find((r) => r.user_id === user?.id);
 
   return (
     <div className="px-2">
@@ -103,6 +114,13 @@ const BookDetails = () => {
           <ActionButtons bookId={book.id} />
 
           <p className="italic text-slate-600 leading-relaxed my-6">"{book.description}"</p>
+
+          <h3 className="text-lg font-semibold text-slate-800 mb-3">Write a review</h3>
+          <ReviewForm
+            bookId={book.id}
+            existingReview={existingReview}
+            onSubmitted={refresh}
+          />
 
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-semibold text-slate-800">
