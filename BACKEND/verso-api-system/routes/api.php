@@ -12,6 +12,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\MetaController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReadingSessionController;
@@ -29,6 +30,10 @@ Route::get('/books/home', [BookController::class, 'home']);
 Route::get('/books', [BookController::class, 'index']);
 Route::get('/books/{id}', [BookController::class, 'show']);
 Route::get('/books/{bookId}/reviews', [ReviewController::class, 'index']);
+
+// Meta / reference data (public)
+Route::get('/meta/genders', [MetaController::class, 'genders']);
+Route::get('/meta/event-categories', [MetaController::class, 'eventCategories']);
 
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
