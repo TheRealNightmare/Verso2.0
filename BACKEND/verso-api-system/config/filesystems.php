@@ -41,7 +41,9 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            // Relative URL so stored file links work regardless of host/port.
+            // The frontend prepends the API origin (see resolveFileUrl).
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

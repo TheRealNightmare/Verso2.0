@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Edit2, Shield, X } from 'lucide-react';
 import { updateProfile } from '../../api/profile';
 import Modal from '../ui/Modal';
+import Avatar from '../ui/Avatar';
 import { useToast } from '../../context/ToastContext';
 
 const ProfileCard = ({ profile, onUpdated }) => {
@@ -43,7 +44,6 @@ const ProfileCard = ({ profile, onUpdated }) => {
 
   const displayName = profile?.name || 'User';
   const displayRole = profile?.role || 'Reader';
-  const displayAvatar = profile?.avatarUrl || 'https://i.pravatar.cc/150?u=default';
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
@@ -61,10 +61,11 @@ const ProfileCard = ({ profile, onUpdated }) => {
 
       <div className="flex flex-col items-center">
         <div className="relative">
-          <img
-            src={displayAvatar}
-            alt={displayName}
-            className="w-24 h-24 rounded-full object-cover ring-4 ring-slate-100"
+          <Avatar
+            src={profile?.avatarUrl}
+            name={displayName}
+            className="w-24 h-24 ring-4 ring-slate-100"
+            textClass="text-2xl"
           />
           <div className="absolute -right-1 bottom-1 w-6 h-6 rounded-full bg-[#1e3a5f] text-white flex items-center justify-center">
             <Shield size={12} />

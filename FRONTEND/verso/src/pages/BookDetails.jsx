@@ -11,9 +11,6 @@ import { fetchBook } from '../api/books';
 import { useAuth } from '../context/AuthContext';
 import usePageTitle from '../hooks/usePageTitle';
 
-const avatarFor = (name) =>
-  `https://i.pravatar.cc/64?u=${encodeURIComponent(name || 'anon')}`;
-
 const BookDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -67,7 +64,7 @@ const BookDetails = () => {
     user: r.user?.name || 'Anonymous',
     time: r.created_at,
     text: r.comment,
-    avatar: avatarFor(r.user?.name),
+    avatar: r.user?.avatar_url,
   }));
 
   const existingReview = (book.reviews || []).find((r) => r.user_id === user?.id);

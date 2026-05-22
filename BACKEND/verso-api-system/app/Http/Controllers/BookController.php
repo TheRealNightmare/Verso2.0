@@ -61,7 +61,7 @@ class BookController extends Controller
     public function show(int $id): JsonResponse
     {
         $book = Book::withCount('reviews')
-            ->with(['reviews.user:id,name'])
+            ->with(['reviews.user:id,name,avatar_url'])
             ->findOrFail($id);
 
         return response()->json($book);
