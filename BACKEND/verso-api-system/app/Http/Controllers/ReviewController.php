@@ -11,7 +11,7 @@ class ReviewController extends Controller
 {
     public function index(int $bookId): JsonResponse
     {
-        $reviews = Review::with('user:id,name')
+        $reviews = Review::with('user:id,name,avatar_url')
             ->where('book_id', $bookId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -36,6 +36,6 @@ class ReviewController extends Controller
         $avg = Review::where('book_id', $bookId)->avg('rating');
         Book::where('id', $bookId)->update(['average_rating' => round($avg, 1)]);
 
-        return response()->json($review->load('user:id,name'), 201);
+        return response()->json($review->load('user:id,name,avatar_url'), 201);
     }
 }

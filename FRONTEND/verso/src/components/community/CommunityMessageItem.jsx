@@ -2,11 +2,8 @@ import { useState } from 'react';
 import { Smile, Pencil, Trash2, Check, X } from 'lucide-react';
 import AudioMessage from './AudioMessage';
 import ReactionPicker from './ReactionPicker';
-
-const placeholderAvatar = (seed = 'U') => {
-  const text = encodeURIComponent(String(seed).slice(0, 2).toUpperCase());
-  return `https://via.placeholder.com/40?text=${text}`;
-};
+import Avatar from '../ui/Avatar';
+import { resolveFileUrl } from '../../lib/assets';
 
 const formatTime = (iso) => {
   if (!iso) return '';
@@ -58,14 +55,14 @@ const CommunityMessageItem = ({ message, onReact, onEdit, onDelete }) => {
     }
 
     if (message.type === 'audio') {
-      return <AudioMessage message={{ audio: message.audio, timestamp: '' }} isMine={mine} />;
+      return <AudioMessage message={{ audio: { ...message.audio, url: resolveFileUrl(message.audio?.url) }, timestamp: '' }} isMine={mine} />;
     }
 
     if (message.type === 'image' && message.image?.url) {
       return (
         <div className="flex flex-col gap-1">
           <img
-            src={message.image.url}
+            src={resolveFileUrl(message.image.url)}
             alt="attachment"
             className="max-w-[260px] max-h-80 rounded-xl border border-slate-200 object-cover"
           />
@@ -86,10 +83,11 @@ const CommunityMessageItem = ({ message, onReact, onEdit, onDelete }) => {
   return (
     <div className={`group flex gap-2 px-2 py-1.5 ${mine ? 'justify-end' : 'justify-start'}`}>
       {!mine && (
-        <img
-          src={author.avatarUrl || placeholderAvatar(author.name)}
-          alt={author.name || 'user'}
-          className="w-8 h-8 rounded-full object-cover shrink-0 mt-5"
+        <Avatar
+          src={author.avatarUrl}
+          name={author.name}
+          className="w-8 h-8 mt-5"
+          textClass="text-xs"
         />
       )}
 

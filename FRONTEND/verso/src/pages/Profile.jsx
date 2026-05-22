@@ -141,6 +141,7 @@ const Profile = () => {
         />
         <AvatarPanel
           avatarUrl={avatarUrl}
+          name={profile.fullName}
           onChangePhoto={() => setUploadOpen(true)}
           onLogout={handleLogout}
         />

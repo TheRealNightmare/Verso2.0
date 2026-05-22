@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { loginUser, registerUser, logoutUser } from '../api/auth';
+import { getProfile } from '../api/profile';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,25 @@ export function AuthProvider({ children }) {
       return next;
     });
   }
+
+  // Refresh the cached user from the server on startup so the TopBar (and any other
+  // useAuth consumer) reflects the current name/avatar even if the localStorage
+  // copy was saved by an older login. Errors are ignored to keep the cached user.
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    getProfile()
+      .then((data) => {
+        if (!active) return;
+        updateUser({ name: data.name, avatarUrl: data.avatarUrl });
+      })
+      .catch(() => {
+        /* ignore; keep cached user */
+      });
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   async function logout() {
     try {

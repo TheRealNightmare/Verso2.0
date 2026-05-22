@@ -1,9 +1,14 @@
-const AvatarPanel = ({ avatarUrl, onChangePhoto, onLogout }) => {
+import Avatar from '../ui/Avatar';
+
+const AvatarPanel = ({ avatarUrl, name, onChangePhoto, onLogout }) => {
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="w-44 h-44 rounded-full overflow-hidden bg-slate-200 shadow-sm">
-        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-      </div>
+      <Avatar
+        src={avatarUrl}
+        name={name}
+        className="w-44 h-44 shadow-sm"
+        textClass="text-6xl"
+      />
       <button
         type="button"
         onClick={onChangePhoto}

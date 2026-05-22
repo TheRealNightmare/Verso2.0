@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { Search, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
+import Avatar from './ui/Avatar';
 
 const TopBar = () => {
   const { user, logout } = useAuth();
   const confirm = useConfirm();
-
-  const avatarUrl = user?.avatarUrl || 'https://i.pravatar.cc/64?img=12';
 
   const handleLogout = async () => {
     const ok = await confirm({
@@ -52,10 +51,11 @@ const TopBar = () => {
         ) : (
           <div className="flex items-center gap-3">
             <Link to="/profile" className="flex items-center gap-3 group">
-              <img
-                src={avatarUrl}
-                alt={user.name}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-white shadow shrink-0"
+              <Avatar
+                src={user?.avatarUrl}
+                name={user.name}
+                className="w-9 h-9 ring-2 ring-white shadow"
+                textClass="text-xs"
               />
               <span className="text-sm text-slate-700 group-hover:text-[#5b7c99]">
                 {user.name}
