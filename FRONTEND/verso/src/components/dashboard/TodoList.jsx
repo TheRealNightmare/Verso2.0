@@ -8,7 +8,6 @@ const TodoList = ({ initialItems }) => {
   const [error, setError] = useState(null);
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newTime, setNewTime] = useState('');
 
   useEffect(() => {
     if (initialItems) {
@@ -57,7 +56,7 @@ const TodoList = ({ initialItems }) => {
       setAdding(false);
       return;
     }
-    const payload = { title, time: newTime.trim() || null, done: false };
+    const payload = { title, done: false };
     try {
       const created = await createTodo(payload);
       setItems((prev) => [...prev, created]);
@@ -65,7 +64,6 @@ const TodoList = ({ initialItems }) => {
       setError(err?.message || 'Failed to add task.');
     }
     setNewTitle('');
-    setNewTime('');
     setAdding(false);
   };
 
@@ -109,12 +107,8 @@ const TodoList = ({ initialItems }) => {
               >
                 {item.title}
               </p>
-              {(item.subtitle || item.time) && (
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {item.subtitle}
-                  {item.subtitle && item.time && '  '}
-                  {item.time && <span className="ml-1 text-slate-500">{item.time}</span>}
-                </p>
+              {item.subtitle && (
+                <p className="text-[11px] text-slate-400 mt-0.5">{item.subtitle}</p>
               )}
             </div>
             <button
@@ -141,18 +135,10 @@ const TodoList = ({ initialItems }) => {
               if (e.key === 'Escape') {
                 setAdding(false);
                 setNewTitle('');
-                setNewTime('');
               }
             }}
             placeholder="New task"
             className="flex-1 text-sm border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:border-[#1e3a5f]"
-          />
-          <input
-            type="text"
-            value={newTime}
-            onChange={(e) => setNewTime(e.target.value)}
-            placeholder="Time"
-            className="w-20 text-xs border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:border-[#1e3a5f]"
           />
           <button
             type="button"
