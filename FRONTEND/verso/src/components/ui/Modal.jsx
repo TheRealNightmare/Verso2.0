@@ -12,7 +12,7 @@ const Modal = ({
   labelledBy,
   label,
   // Full visual styling of the panel so each call site can keep its own look.
-  panelClassName = 'bg-white rounded-xl shadow-lg max-w-md',
+  panelClassName = 'bg-white rounded-xl shadow-lg max-w-md max-h-[90vh] overflow-y-auto',
   children,
 }) => {
   const panelRef = useRef(null);
@@ -72,7 +72,7 @@ const Modal = ({
         aria-labelledby={labelledBy}
         aria-label={label}
         tabIndex={-1}
-        className={`w-full mx-4 focus:outline-none ${panelClassName}`}
+        className={`w-full mx-3 sm:mx-4 focus:outline-none ${panelClassName}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

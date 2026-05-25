@@ -104,7 +104,7 @@ const UploadReadingPage = () => {
       const rendition = book.renderTo(epubViewerRef.current, {
         width: '100%',
         height: '100%',
-        spread: 'always',
+        spread: 'auto', // single page on narrow screens, two-page spread when wide
       });
       await rendition.display();
       await book.locations.generate(1600);
@@ -222,20 +222,20 @@ const UploadReadingPage = () => {
 
   const renderHeader = (centerLabel, footerLabel) => (
     <>
-      <header className="grid grid-cols-3 items-center px-8 py-5 bg-[#f8f6f2]">
+      <header className="grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5 bg-[#f8f6f2]">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1 text-sm text-[#2c3e50] hover:text-[#5b7c99] justify-self-start"
         >
-          <ChevronLeft size={18} /> Back
+          <ChevronLeft size={18} /> <span className="hidden sm:inline">Back</span>
         </button>
-        <div className="text-center">
-          <h2 className="text-lg font-semibold text-[#2c3e50] truncate">{upload?.title}</h2>
-          <h3 className="text-xs uppercase tracking-wider text-[#2c3e50]/60">{centerLabel}</h3>
+        <div className="text-center min-w-0 px-2">
+          <h2 className="text-sm sm:text-lg font-semibold text-[#2c3e50] truncate">{upload?.title}</h2>
+          <h3 className="text-[10px] sm:text-xs uppercase tracking-wider text-[#2c3e50]/60">{centerLabel}</h3>
         </div>
         <div />
       </header>
-      <footer className="flex items-center justify-center py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
+      <footer className="flex items-center justify-center py-3 sm:py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
         {footerLabel}
       </footer>
     </>
@@ -244,25 +244,25 @@ const UploadReadingPage = () => {
   if (upload?.format === 'txt' && textPages) {
     const pageText = textPages[currentPage] || '';
     return (
-      <div className="flex flex-col h-[calc(100vh-3rem)] -m-6 bg-[#f8f6f2]">
+      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
         {renderHeader(`Plain text (${upload.format})`, `${currentPage + 1}/${textPages.length}`)}
-        <main className="relative flex-1 flex items-center px-16 py-6 overflow-hidden">
+        <main className="relative flex-1 flex items-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-hidden">
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage <= 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
           >
             <ChevronLeft size={32} strokeWidth={1.5} />
           </button>
-          <div className="flex-1 h-full overflow-y-auto px-4">
-            <p className="whitespace-pre-line text-[13px] leading-relaxed text-[#2c3e50]/80">
+          <div className="flex-1 h-full overflow-y-auto px-2 sm:px-4">
+            <p className="whitespace-pre-line text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80">
               {pageText}
             </p>
           </div>
           <button
             onClick={() => setCurrentPage((p) => Math.min(textPages.length - 1, p + 1))}
             disabled={currentPage >= textPages.length - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
           >
             <ChevronRight size={32} strokeWidth={1.5} />
           </button>
@@ -273,19 +273,19 @@ const UploadReadingPage = () => {
 
   if (upload?.format === 'epub') {
     return (
-      <div className="flex flex-col h-[calc(100vh-3rem)] -m-6 bg-[#f8f6f2]">
+      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
         {renderHeader('EPUB', `${epubLoc.current}/${epubLoc.total}`)}
-        <main className="relative flex-1 flex items-center px-16 py-6 overflow-hidden">
+        <main className="relative flex-1 flex items-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-hidden">
           <button
             onClick={() => epubRendition?.prev()}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99]"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
           >
             <ChevronLeft size={32} strokeWidth={1.5} />
           </button>
           <div ref={epubViewerRef} className="flex-1 h-full" />
           <button
             onClick={() => epubRendition?.next()}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99]"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
           >
             <ChevronRight size={32} strokeWidth={1.5} />
           </button>
@@ -296,21 +296,21 @@ const UploadReadingPage = () => {
 
   if (upload?.format === 'pdf' && pdfDoc) {
     return (
-      <div className="flex flex-col h-[calc(100vh-3rem)] -m-6 bg-[#f8f6f2]">
+      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
         {renderHeader('PDF', `${currentPage + 1}/${pdfDoc.numPages}`)}
-        <main className="relative flex-1 flex items-center justify-center px-16 py-6 overflow-auto">
+        <main className="relative flex-1 flex items-center justify-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-auto">
           <button
             onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             disabled={currentPage <= 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
           >
             <ChevronLeft size={32} strokeWidth={1.5} />
           </button>
-          <canvas ref={pdfCanvasRef} className="shadow-md bg-white" />
+          <canvas ref={pdfCanvasRef} className="shadow-md bg-white max-w-full h-auto" />
           <button
             onClick={() => setCurrentPage((p) => Math.min(pdfDoc.numPages - 1, p + 1))}
             disabled={currentPage >= pdfDoc.numPages - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
           >
             <ChevronRight size={32} strokeWidth={1.5} />
           </button>

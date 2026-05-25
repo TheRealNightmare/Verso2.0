@@ -50,7 +50,7 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f6f2] px-4 py-10">
-      <div className="relative w-full max-w-md bg-white p-10 rounded-2xl shadow-md">
+      <div className="relative w-full max-w-md bg-white p-6 sm:p-10 rounded-2xl shadow-md">
         <div className="absolute top-4 right-4">
           <button
             type="button"

@@ -96,6 +96,7 @@ const ReadingPage = () => {
   usePageTitle('Reading');
   const [isAnnotationsOpen, setIsAnnotationsOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [chromeVisible, setChromeVisible] = useState(true); // mobile: toggle header/footer
 
   const [annotations, setAnnotations] = useState([]);
   const [selectionInfo, setSelectionInfo] = useState(null); // { column, start, end, text, rect }
@@ -159,6 +160,22 @@ const ReadingPage = () => {
     if (!pages.length) return;
     setSelectionInfo(null);
     setCurrentPage(Math.max(0, Math.min(next, pages.length - 1)));
+  };
+
+  // E-reader tap zones (phones/tablets): left 25% = previous page, right 25% =
+  // next page, center = toggle the chrome. On desktop a tap just toggles chrome.
+  const handleReaderTap = (e) => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return; // a text selection is in progress
+    if (window.innerWidth >= 1024) {
+      setChromeVisible((v) => !v);
+      return;
+    }
+    const x = e.clientX;
+    const w = window.innerWidth;
+    if (x < w * 0.25) goToPage(currentPage - 1);
+    else if (x > w * 0.75) goToPage(currentPage + 1);
+    else setChromeVisible((v) => !v);
   };
 
   const handleMouseUp = () => {
@@ -287,19 +304,19 @@ const ReadingPage = () => {
   );
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] -m-6 bg-[#f8f6f2]">
+    <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="grid grid-cols-3 items-center px-8 py-5 bg-[#f8f6f2]">
+        <header className={`${chromeVisible ? 'grid' : 'hidden'} lg:grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5 bg-[#f8f6f2]`}>
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-1 text-sm text-[#2c3e50] hover:text-[#5b7c99] justify-self-start"
           >
-            <ChevronLeft size={18} /> Back
+            <ChevronLeft size={18} /> <span className="hidden sm:inline">Back</span>
           </button>
 
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-[#2c3e50]">Chapter {page.chapter}</h2>
-            <h3 className="text-lg font-semibold text-[#2c3e50]">{page.chapterTitle}</h3>
+          <div className="text-center min-w-0 px-2">
+            <h2 className="text-sm sm:text-lg font-semibold text-[#2c3e50] truncate">Chapter {page.chapter}</h2>
+            <h3 className="hidden sm:block text-lg font-semibold text-[#2c3e50] truncate">{page.chapterTitle}</h3>
           </div>
 
           <div className="justify-self-end">
@@ -307,11 +324,11 @@ const ReadingPage = () => {
           </div>
         </header>
 
-        <main className="relative flex-1 flex items-center px-12 py-6 overflow-hidden bg-[#f8f6f2]">
+        <main className="relative flex-1 flex items-center px-2 sm:px-8 lg:px-12 py-3 sm:py-6 overflow-hidden bg-[#f8f6f2]">
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="hidden lg:block absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Previous page"
           >
             <ChevronLeft size={32} strokeWidth={1.5} />
@@ -320,12 +337,13 @@ const ReadingPage = () => {
           <div
             key={currentPage}
             onMouseUp={handleMouseUp}
-            className="flex-1 max-w-4xl mx-auto grid grid-cols-2 gap-12 h-full overflow-y-auto px-4 animate-page-turn"
+            onClick={handleReaderTap}
+            className="flex-1 max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 h-full overflow-y-auto px-2 sm:px-4 animate-page-turn"
           >
             <div>
               <p
                 ref={leftRef}
-                className="whitespace-pre-line text-justify text-[13px] leading-relaxed text-[#2c3e50]/80"
+                className="whitespace-pre-line text-justify text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80"
               >
                 {renderWithHighlights(page.left, leftAnns, openEditor)}
               </p>
@@ -333,7 +351,7 @@ const ReadingPage = () => {
             <div>
               <p
                 ref={rightRef}
-                className="whitespace-pre-line text-justify text-[13px] leading-relaxed text-[#2c3e50]/80"
+                className="whitespace-pre-line text-justify text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80"
               >
                 {renderWithHighlights(page.right, rightAnns, openEditor)}
               </p>
@@ -343,7 +361,7 @@ const ReadingPage = () => {
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= pages.length - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Next page"
           >
             <ChevronRight size={32} strokeWidth={1.5} />
@@ -354,7 +372,7 @@ const ReadingPage = () => {
               className="fixed z-50 flex items-center gap-1 rounded-lg bg-white px-2 py-1.5 shadow-lg ring-1 ring-black/10"
               style={{
                 top: Math.max(8, selectionInfo.rect.top - 46),
-                left: selectionInfo.rect.left,
+                left: Math.max(8, Math.min(selectionInfo.rect.left, window.innerWidth - 220)),
               }}
             >
               {HIGHLIGHT_COLORS.map((c) => (
@@ -376,13 +394,35 @@ const ReadingPage = () => {
           )}
         </main>
 
-        <footer className="flex items-center justify-center py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
-          {currentPage + 1}/{pages.length}
+        <footer className={`${chromeVisible ? 'flex' : 'hidden'} lg:flex items-center justify-center gap-6 py-3 sm:py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]`}>
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage <= 0}
+            className="lg:hidden p-1 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            aria-label="Previous page"
+          >
+            <ChevronLeft size={24} strokeWidth={1.5} />
+          </button>
+          <span>{currentPage + 1}/{pages.length}</span>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage >= pages.length - 1}
+            className="lg:hidden p-1 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            aria-label="Next page"
+          >
+            <ChevronRight size={24} strokeWidth={1.5} />
+          </button>
         </footer>
       </div>
 
       {isAnnotationsOpen && (
-        <aside className="w-72 bg-[#b8c5d6] flex flex-col">
+        <>
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={() => setIsAnnotationsOpen(false)}
+          aria-hidden
+        />
+        <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-[#b8c5d6] flex flex-col shadow-xl lg:static lg:z-auto lg:w-72 lg:max-w-none lg:shadow-none">
           <div className="flex items-center justify-end px-6 py-5 text-[#2c3e50]">
             <button
               onClick={() => setIsAnnotationsOpen(false)}
@@ -451,6 +491,7 @@ const ReadingPage = () => {
               ))}
           </div>
         </aside>
+        </>
       )}
 
       {editingAnn && (

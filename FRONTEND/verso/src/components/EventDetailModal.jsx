@@ -18,7 +18,7 @@ const EventDetailModal = ({ event, categories = {}, onClose }) => {
   const cat = categories[event.category] || categories.movie || FALLBACK_CAT;
 
   return (
-    <Modal onClose={onClose} label={event.title} panelClassName="bg-white rounded-xl shadow-lg overflow-hidden max-w-md">
+    <Modal onClose={onClose} label={event.title} panelClassName="bg-white rounded-xl shadow-lg overflow-hidden max-w-md max-h-[90vh] overflow-y-auto">
         <div
           className="px-5 py-4 flex items-center justify-between"
           style={{ backgroundColor: cat.bg, color: cat.text }}

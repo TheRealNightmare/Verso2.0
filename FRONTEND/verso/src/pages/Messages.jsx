@@ -128,12 +128,12 @@ const Messages = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto h-[calc(100vh-10rem)]">
+    <div className="max-w-5xl mx-auto h-[calc(100vh-9rem)] md:h-[calc(100vh-10rem)]">
       <div className="flex h-full rounded-2xl border border-slate-200 bg-white overflow-hidden">
         {/* Inbox */}
         <aside
-          className={`w-full sm:w-72 border-r border-slate-200 flex flex-col ${
-            activeId ? 'hidden sm:flex' : 'flex'
+          className={`w-full md:w-72 border-r border-slate-200 flex flex-col ${
+            activeId ? 'hidden md:flex' : 'flex'
           }`}
         >
           <h2 className="px-4 py-3 text-sm font-semibold text-slate-700 border-b border-slate-100">
@@ -183,7 +183,7 @@ const Messages = () => {
         </aside>
 
         {/* Thread */}
-        <section className={`flex-1 flex flex-col min-w-0 ${activeId ? 'flex' : 'hidden sm:flex'}`}>
+        <section className={`flex-1 flex flex-col min-w-0 ${activeId ? 'flex' : 'hidden md:flex'}`}>
           {!activeId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
               <MessageSquare size={40} />
@@ -211,7 +211,7 @@ const Messages = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/messages')}
-                  className="sm:hidden p-1 text-slate-500 hover:text-slate-700"
+                  className="md:hidden p-1 text-slate-500 hover:text-slate-700"
                   aria-label="Back"
                 >
                   <ArrowLeft size={20} />
