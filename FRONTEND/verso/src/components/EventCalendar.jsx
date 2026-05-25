@@ -81,34 +81,55 @@ const EventCalendar = ({ events = [], categories = {}, onEventClick }) => {
           return (
             <div
               key={idx}
-              className={`relative border-r border-b border-slate-200 min-h-[90px] p-1.5 ${
+              className={`relative border-r border-b border-slate-200 min-h-[52px] sm:min-h-[90px] p-1 sm:p-1.5 ${
                 cell.inMonth ? 'bg-white' : 'bg-slate-50'
               } ${(idx + 1) % 7 === 0 ? 'border-r-0' : ''} ${
                 cell.iso === todayIso ? 'ring-2 ring-inset ring-[#4f83cc]' : ''
               }`}
             >
               <span
-                className={`text-xs ${
+                className={`text-[11px] sm:text-xs ${
                   cell.inMonth ? 'text-slate-700' : 'text-slate-400'
                 }`}
               >
                 {cell.date.getDate()}
               </span>
 
-              {dayEvents.map((ev) => {
-                const cat = categories[ev.category] || categories.movie || FALLBACK_CAT;
-                return (
-                  <button
-                    key={ev.id}
-                    onClick={() => onEventClick?.(ev)}
-                    className="mt-1 w-full text-left rounded px-1.5 py-1 leading-tight hover:opacity-90"
-                    style={{ backgroundColor: cat.bg, color: cat.text }}
-                  >
-                    <div className="text-[11px] font-semibold truncate">{ev.title}</div>
-                    <div className="text-[9px] opacity-80 truncate">{ev.subtitle}</div>
-                  </button>
-                );
-              })}
+              {/* Mobile: compact dots so cells stay readable at 320px */}
+              {dayEvents.length > 0 && (
+                <div className="md:hidden mt-1 flex flex-wrap gap-0.5">
+                  {dayEvents.slice(0, 4).map((ev) => {
+                    const cat = categories[ev.category] || categories.movie || FALLBACK_CAT;
+                    return (
+                      <button
+                        key={ev.id}
+                        onClick={() => onEventClick?.(ev)}
+                        aria-label={ev.title}
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: cat.bg }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Tablet/desktop: full event chips */}
+              <div className="hidden md:block">
+                {dayEvents.map((ev) => {
+                  const cat = categories[ev.category] || categories.movie || FALLBACK_CAT;
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => onEventClick?.(ev)}
+                      className="mt-1 w-full text-left rounded px-1.5 py-1 leading-tight hover:opacity-90"
+                      style={{ backgroundColor: cat.bg, color: cat.text }}
+                    >
+                      <div className="text-[11px] font-semibold truncate">{ev.title}</div>
+                      <div className="text-[9px] opacity-80 truncate">{ev.subtitle}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           );
         })}

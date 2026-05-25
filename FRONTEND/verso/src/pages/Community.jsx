@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Info, X } from 'lucide-react';
 import CommunityInfoCard from '../components/community/CommunityInfoCard';
 import CommunityMessageItem from '../components/community/CommunityMessageItem';
 import MessageComposer from '../components/community/MessageComposer';
@@ -33,6 +34,7 @@ const Community = () => {
   const [info, setInfo] = useState(null);
   const [feed, setFeed] = useState([]);
   const [error, setError] = useState(null);
+  const [infoOpen, setInfoOpen] = useState(false);
   const feedEndRef = useRef(null);
   // Hold the current user id in a ref so the realtime effect (deps []) always
   // sees the latest value without re-subscribing to Echo.
@@ -159,13 +161,44 @@ const Community = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] bg-white rounded-xl overflow-hidden shadow-sm">
-      <aside className="w-80 border-r border-slate-200 flex flex-col p-4 overflow-y-auto">
+    <div className="relative flex h-[calc(100vh-9rem)] sm:h-[calc(100vh-10rem)] bg-white rounded-xl overflow-hidden shadow-sm">
+      {/* Mobile backdrop for the info drawer */}
+      {infoOpen && (
+        <div
+          className="absolute inset-0 z-10 bg-black/30 lg:hidden"
+          onClick={() => setInfoOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={`absolute inset-y-0 left-0 z-20 w-72 sm:w-80 max-w-[85%] bg-white border-r border-slate-200 flex flex-col p-4 overflow-y-auto transition-transform duration-300 lg:static lg:z-auto lg:translate-x-0 lg:max-w-none ${
+          infoOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex justify-end lg:hidden mb-1">
+          <button
+            type="button"
+            onClick={() => setInfoOpen(false)}
+            aria-label="Close info"
+            className="p-1 text-slate-400 hover:text-slate-600"
+          >
+            <X size={20} />
+          </button>
+        </div>
         <CommunityInfoCard info={info} />
       </aside>
 
-      <section className="flex-1 flex flex-col">
-        <div className="px-5 py-3 border-b border-slate-200 flex items-center">
+      <section className="flex-1 flex flex-col min-w-0">
+        <div className="px-4 sm:px-5 py-3 border-b border-slate-200 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setInfoOpen(true)}
+            aria-label="Community info"
+            className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100"
+          >
+            <Info size={18} />
+          </button>
           <div className="text-sm font-semibold text-slate-800">Community feed</div>
         </div>
 

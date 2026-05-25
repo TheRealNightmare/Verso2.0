@@ -35,7 +35,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8f6f2] px-4 py-10">
-      <div className="w-full max-w-md bg-white p-10 rounded-2xl shadow-md">
+      <div className="w-full max-w-md bg-white p-6 sm:p-10 rounded-2xl shadow-md">
         <div className="flex justify-center mb-6">
           <BookOpen size={80} color="#5b7c99" strokeWidth={1} />
         </div>

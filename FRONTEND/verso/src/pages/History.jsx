@@ -73,23 +73,23 @@ const History = () => {
           const rating = isUpload ? 0 : Math.round(book?.average_rating ?? 0);
 
           return (
-            <div key={entry.id} className="bg-white p-4 rounded-xl shadow-sm">
-              <div className="flex gap-5">
+            <div key={entry.id} className="bg-white p-3 sm:p-4 rounded-xl shadow-sm">
+              <div className="flex gap-3 sm:gap-5">
                 {cover ? (
                   <img
                     src={cover}
                     alt={title}
-                    className="w-28 h-40 object-cover rounded-md shrink-0"
+                    className="w-20 h-28 sm:w-28 sm:h-40 object-cover rounded-md shrink-0"
                   />
                 ) : (
-                  <div className="w-28 h-40 rounded-md shrink-0 bg-linear-to-br from-slate-200 to-slate-400 flex items-center justify-center text-white text-xs font-bold uppercase">
+                  <div className="w-20 h-28 sm:w-28 sm:h-40 rounded-md shrink-0 bg-linear-to-br from-slate-200 to-slate-400 flex items-center justify-center text-white text-xs font-bold uppercase">
                     {isUpload ? upload?.format : 'Book'}
                   </div>
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-slate-800 min-w-0 break-words">{title}</h3>
                     <button
                       type="button"
                       aria-label={`Remove ${title} from history`}
@@ -109,7 +109,7 @@ const History = () => {
                     status={`${entry.progress}%`}
                   />
 
-                  <div className="flex items-center gap-4 mt-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                     <Button onClick={() => navigate(readPath)} className="px-4 py-1.5">
                       Read
                     </Button>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -25,6 +26,7 @@ import Messages from './pages/Messages';
 
 function AppContent() {
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const isReadingMode = location.pathname.startsWith('/read') || location.pathname.startsWith('/reading');
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
@@ -63,10 +65,10 @@ function AppContent() {
         Skip to content
       </a>
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <main id="main" className="flex-1 flex flex-col min-w-0">
-          {!isReadingMode && <TopBar />}
-          <div className="flex-1 p-6">{appRoutes}</div>
+          {!isReadingMode && <TopBar onMenuClick={() => setDrawerOpen(true)} />}
+          <div className="flex-1 p-3 sm:p-4 lg:p-6">{appRoutes}</div>
         </main>
       </div>
       {!isReadingMode && <Footer />}
