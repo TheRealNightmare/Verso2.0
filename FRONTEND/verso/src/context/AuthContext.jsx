@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { loginUser, registerUser, logoutUser } from '../api/auth';
 import { getProfile } from '../api/profile';
+import { disconnectEcho } from '../lib/echo';
 
 const AuthContext = createContext(null);
 
@@ -64,6 +65,7 @@ export function AuthProvider({ children }) {
     }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
+    disconnectEcho();
     setToken(null);
     setUser(null);
   }
