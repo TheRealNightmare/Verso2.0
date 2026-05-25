@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
+import { NotificationsProvider } from './context/NotificationsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -19,6 +20,8 @@ import Profile from './pages/Profile';
 import Event from './pages/Event';
 import EventCreate from './pages/EventCreate';
 import Community from './pages/Community';
+import UserProfile from './pages/UserProfile';
+import Messages from './pages/Messages';
 
 function AppContent() {
   const location = useLocation();
@@ -33,6 +36,9 @@ function AppContent() {
       <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
       <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
       <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+      <Route path="/users/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+      <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+      <Route path="/messages/:userId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/book/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
@@ -73,7 +79,9 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <ConfirmProvider>
-          <AppContent />
+          <NotificationsProvider>
+            <AppContent />
+          </NotificationsProvider>
         </ConfirmProvider>
       </ToastProvider>
     </AuthProvider>
