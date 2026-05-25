@@ -35,11 +35,64 @@ class User extends Authenticatable
 
     public function sentFriendships()
     {
-        return $this->hasMany(Friendship::class, 'user_id');
+        return $this->hasMany(Friendship::class, 'requester_id');
     }
 
     public function receivedFriendships()
     {
-        return $this->hasMany(Friendship::class, 'friend_id');
+        return $this->hasMany(Friendship::class, 'addressee_id');
+    }
+
+    /**
+     * The friendship row (in either direction) between this user and another, if any.
+     */
+    public function friendshipWith(int $otherId): ?Friendship
+    {
+        return Friendship::query()
+            ->where(function ($q) use ($otherId) {
+                $q->where('requester_id', $this->id)->where('addressee_id', $otherId);
+            })
+            ->orWhere(function ($q) use ($otherId) {
+                $q->where('requester_id', $otherId)->where('addressee_id', $this->id);
+            })
+            ->first();
+    }
+
+    /**
+     * Status of the relationship with another user from THIS user's perspective:
+     * 'none' | 'friends' | 'request_sent' | 'request_received'.
+     */
+    public function friendStatusWith(int $otherId): string
+    {
+        $f = $this->friendshipWith($otherId);
+        if (! $f) {
+            return 'none';
+        }
+        if ($f->status === 'accepted') {
+            return 'friends';
+        }
+        return $f->requester_id === $this->id ? 'request_sent' : 'request_received';
+    }
+
+    public function isFriendsWith(int $otherId): bool
+    {
+        return $this->friendStatusWith($otherId) === 'friends';
+    }
+
+    /**
+     * IDs of all accepted friends.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    public function friendIds()
+    {
+        return Friendship::query()
+            ->where('status', 'accepted')
+            ->where(function ($q) {
+                $q->where('requester_id', $this->id)->orWhere('addressee_id', $this->id);
+            })
+            ->get(['requester_id', 'addressee_id'])
+            ->map(fn ($f) => $f->requester_id === $this->id ? $f->addressee_id : $f->requester_id)
+            ->values();
     }
 }

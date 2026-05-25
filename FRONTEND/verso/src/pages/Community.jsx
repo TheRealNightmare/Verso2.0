@@ -13,7 +13,7 @@ import {
   toggleReaction,
   pingPresence,
 } from '../api/community';
-import { getEcho, disconnectEcho } from '../lib/echo';
+import { getEcho } from '../lib/echo';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -95,7 +95,9 @@ const Community = () => {
       try { channel?.stopListening('.message.updated'); } catch {}
       try { channel?.stopListening('.message.deleted'); } catch {}
       try { channel?.stopListening('.reaction.toggled'); } catch {}
-      disconnectEcho();
+      // Leave only the community channel; the Echo socket is shared app-wide
+      // (used by NotificationsContext) and is torn down on logout instead.
+      try { getEcho().leave('community'); } catch {}
     };
   }, []);
 

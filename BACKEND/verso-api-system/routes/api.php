@@ -15,9 +15,12 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\MetaController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DirectMessageController;
+use App\Http\Controllers\FriendshipController;
 use App\Http\Controllers\ReadingSessionController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TodoController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserUploadController;
 use Illuminate\Support\Facades\Route;
 
@@ -105,4 +108,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Presence heartbeat
     Route::post('/presence/ping', [PresenceController::class, 'ping']);
+
+    // People search + public profiles
+    Route::get('/users/search', [UserController::class, 'search']);
+    Route::get('/users/{id}',   [UserController::class, 'show']);
+
+    // Friendships (request / accept flow)
+    Route::get   ('/friends',                        [FriendshipController::class, 'index']);
+    Route::get   ('/friends/requests',               [FriendshipController::class, 'requests']);
+    Route::post  ('/friends/requests',               [FriendshipController::class, 'store']);
+    Route::post  ('/friends/requests/{id}/accept',   [FriendshipController::class, 'accept']);
+    Route::post  ('/friends/requests/{id}/decline',  [FriendshipController::class, 'decline']);
+    Route::delete('/friends/{userId}',               [FriendshipController::class, 'destroy']);
+
+    // Direct messages (friends only)
+    Route::get ('/messages',                 [DirectMessageController::class, 'inbox']);
+    Route::get ('/messages/{userId}',        [DirectMessageController::class, 'thread']);
+    Route::post('/messages/{userId}',        [DirectMessageController::class, 'store']);
+    Route::post('/messages/{userId}/read',   [DirectMessageController::class, 'markRead']);
 });
