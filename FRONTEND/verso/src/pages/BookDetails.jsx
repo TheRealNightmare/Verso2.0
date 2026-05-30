@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, PenSquare } from 'lucide-react';
 import BookInfoStats from '../components/BookInfoStats';
 import ActionButtons from '../components/ActionButtons';
 import ReviewComponent from '../components/ReviewComponent';
@@ -9,6 +9,7 @@ import ReviewForm from '../components/ReviewForm';
 import Spinner from '../components/ui/Spinner';
 import { fetchBook } from '../api/books';
 import { useAuth } from '../context/AuthContext';
+import { resolveFileUrl } from '../lib/assets';
 import usePageTitle from '../hooks/usePageTitle';
 
 const BookDetails = () => {
@@ -88,7 +89,7 @@ const BookDetails = () => {
                 </div>
               )}
               <img
-                src={book.cover_image_url}
+                src={resolveFileUrl(book.cover_image_url)}
                 alt={book.title}
                 className="w-full h-auto block"
               />
@@ -107,6 +108,21 @@ const BookDetails = () => {
             producer={book.producer}
             status={book.release_status}
           />
+
+          {book.source === 'author' && (book.author_user || book.authorUser) && (
+            (() => {
+              const u = book.author_user || book.authorUser;
+              return (
+                <p className="text-sm text-slate-500 -mt-2 mb-3 flex items-center gap-1">
+                  <PenSquare size={14} className="text-amber-600" />
+                  Published by{' '}
+                  <Link to={`/users/${u.id}`} className="text-[#5b7c99] hover:underline">
+                    @{u.name}
+                  </Link>
+                </p>
+              );
+            })()
+          )}
 
           <ActionButtons bookId={book.id} />
 

@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { UserPlus, UserCheck, UserX, MessageCircle, Clock, BookOpen, Heart, Star, Timer } from 'lucide-react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { UserPlus, UserCheck, UserX, MessageCircle, Clock, BookOpen, Heart, Star, Timer, PenSquare } from 'lucide-react';
 import Avatar from '../components/ui/Avatar';
 import Spinner from '../components/ui/Spinner';
 import { getUserProfile } from '../api/users';
+import { getBooksByAuthor } from '../api/authorBooks';
+import { resolveFileUrl } from '../lib/assets';
 import {
   sendFriendRequest,
   acceptFriendRequest,
@@ -31,6 +33,7 @@ const UserProfile = () => {
   const { refreshRequests } = useNotifications();
 
   const [profile, setProfile] = useState(null);
+  const [authorBooks, setAuthorBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +50,14 @@ const UserProfile = () => {
         return;
       }
       setProfile(data);
+      if (data.role === 'author') {
+        try {
+          const books = await getBooksByAuthor(data.id);
+          setAuthorBooks(books);
+        } catch {
+          setAuthorBooks([]);
+        }
+      }
     } catch {
       setError('Could not load this profile.');
     } finally {
@@ -154,7 +165,14 @@ const UserProfile = () => {
               )}
             </div>
             <div className="flex-1 pb-1">
-              <h1 className="text-xl font-semibold text-slate-800">{profile.name}</h1>
+              <h1 className="text-xl font-semibold text-slate-800 flex items-center gap-2">
+                {profile.name}
+                {profile.role === 'author' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
+                    <PenSquare size={12} /> Author
+                  </span>
+                )}
+              </h1>
               <p className="text-sm text-slate-400 flex items-center gap-1">
                 {profile.online ? (
                   <span className="text-green-600">● Online</span>
@@ -237,6 +255,10 @@ const UserProfile = () => {
             )}
           </div>
 
+          {profile.role === 'author' && profile.bio && (
+            <p className="mt-5 text-sm text-slate-600 leading-relaxed">{profile.bio}</p>
+          )}
+
           {/* Reading stats */}
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard icon={BookOpen} label="Books read" value={stats.booksCompleted} />
@@ -244,6 +266,31 @@ const UserProfile = () => {
             <StatCard icon={Star} label="Reviews" value={stats.reviews} />
             <StatCard icon={Timer} label="Hours read" value={stats.hoursRead} />
           </div>
+
+          {profile.role === 'author' && (
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold text-slate-800 mb-3">
+                Published Books
+                <span className="ml-2 text-sm font-normal text-slate-400">({profile.publishedBooksCount ?? authorBooks.length})</span>
+              </h2>
+              {authorBooks.length === 0 ? (
+                <p className="text-sm text-slate-500">No books published yet.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {authorBooks.map((b) => (
+                    <Link key={b.id} to={`/book/${b.id}`} className="block group">
+                      <div className="aspect-2/3 rounded-lg bg-slate-100 overflow-hidden shadow-sm">
+                        {b.cover_image_url && (
+                          <img src={resolveFileUrl(b.cover_image_url)} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-800 truncate">{b.title}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

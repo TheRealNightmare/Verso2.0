@@ -23,6 +23,8 @@ import EventCreate from './pages/EventCreate';
 import Community from './pages/Community';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
+import AuthorPublishPage from './pages/AuthorPublishPage';
+import AuthorDashboard from './pages/AuthorDashboard';
 
 function AppContent() {
   const location = useLocation();
@@ -46,6 +48,8 @@ function AppContent() {
       <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
       <Route path="/read/:id" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/reading/upload/:uploadId" element={<ProtectedRoute><UploadReadingPage /></ProtectedRoute>} />
+      <Route path="/author/publish" element={<ProtectedRoute><AuthorPublishPage /></ProtectedRoute>} />
+      <Route path="/author/dashboard" element={<ProtectedRoute><AuthorDashboard /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="*" element={<Navigate to="/" replace />} />

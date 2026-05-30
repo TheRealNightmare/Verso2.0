@@ -9,6 +9,7 @@ import Avatar from './ui/Avatar';
 import { fetchBooks } from '../api/books';
 import { searchUsers } from '../api/users';
 import { acceptFriendRequest, declineFriendRequest } from '../api/friends';
+import { resolveFileUrl } from '../lib/assets';
 
 const TopBar = ({ onMenuClick = () => {} }) => {
   const { user, logout } = useAuth();
@@ -189,7 +190,14 @@ const TopBar = ({ onMenuClick = () => {} }) => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-800 truncate">{p.name}</p>
+                      <p className="text-sm font-medium text-slate-800 truncate flex items-center gap-1.5">
+                        <span className="truncate">{p.name}</span>
+                        {p.role === 'author' && (
+                          <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-medium">
+                            Author
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-slate-400">
                         {p.friendStatus === 'friends'
                           ? 'Friend'
@@ -220,7 +228,7 @@ const TopBar = ({ onMenuClick = () => {} }) => {
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 text-left transition-colors"
                   >
                     {book.cover_image_url && (
-                      <img src={book.cover_image_url} alt="" className="w-8 h-10 object-cover rounded shrink-0" />
+                      <img src={resolveFileUrl(book.cover_image_url)} alt="" className="w-8 h-10 object-cover rounded shrink-0" />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-800 truncate">{book.title}</p>

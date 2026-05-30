@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
     getProfile()
       .then((data) => {
         if (!active) return;
-        updateUser({ name: data.name, avatarUrl: data.avatarUrl });
+        updateUser({ name: data.name, avatarUrl: data.avatarUrl, role: data.role, bio: data.bio });
       })
       .catch(() => {
         /* ignore; keep cached user */

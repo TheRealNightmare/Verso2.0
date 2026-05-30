@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff, Undo2 } from 'lucide-react';
+import { Eye, EyeOff, Undo2, Camera } from 'lucide-react';
 import usePageTitle from '../hooks/usePageTitle';
 
 function Register() {
@@ -9,14 +9,26 @@ function Register() {
   const navigate = useNavigate();
   usePageTitle('Register');
 
+  const [role, setRole] = useState('user');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatar, setAvatar] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatar(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -26,11 +38,14 @@ function Register() {
       setError('Passwords do not match');
       return;
     }
+    if (!avatar) {
+      setError('Please choose a profile picture.');
+      return;
+    }
 
     setLoading(true);
-
     try {
-      await register({ name, email, password });
+      await register({ name, email, password, role, avatar, bio: role === 'author' ? bio : undefined });
       navigate('/');
     } catch (err) {
       console.error('Registration Error:', err);
@@ -70,6 +85,54 @@ function Register() {
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setRole('user')}
+              className={`py-2 rounded-lg border text-sm font-medium ${
+                role === 'user'
+                  ? 'bg-[#5b7c99] text-white border-[#5b7c99]'
+                  : 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              Reader
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('author')}
+              className={`py-2 rounded-lg border text-sm font-medium ${
+                role === 'author'
+                  ? 'bg-[#5b7c99] text-white border-[#5b7c99]'
+                  : 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              Author
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="relative w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 overflow-hidden flex items-center justify-center text-slate-400 hover:border-[#5b7c99]"
+              aria-label="Upload profile picture"
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Camera size={28} />
+              )}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+            <span className="text-xs text-slate-500">Profile picture (required)</span>
+          </div>
+
           <div className="flex flex-col gap-1">
             <label className="text-sm text-slate-600">Username</label>
             <input
@@ -139,6 +202,20 @@ function Register() {
               </button>
             </div>
           </div>
+
+          {role === 'author' && (
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-slate-600">Author bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell readers about yourself"
+                rows={3}
+                maxLength={1000}
+                className={inputCls}
+              />
+            </div>
+          )}
 
           <button
             type="submit"

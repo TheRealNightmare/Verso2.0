@@ -29,11 +29,15 @@ export async function apiFetch(endpoint, options = {}) {
   return data;
 }
 
-export async function registerUser({ name, email, password }) {
-  return apiFetch('/register', {
-    method: 'POST',
-    body: JSON.stringify({ name, email, password }),
-  });
+export async function registerUser({ name, email, password, role, avatar, bio }) {
+  const form = new FormData();
+  form.append('name', name);
+  form.append('email', email);
+  form.append('password', password);
+  form.append('role', role || 'user');
+  if (avatar) form.append('avatar', avatar);
+  if (bio) form.append('bio', bio);
+  return apiFetch('/register', { method: 'POST', body: form });
 }
 
 export async function loginUser({ email, password }) {

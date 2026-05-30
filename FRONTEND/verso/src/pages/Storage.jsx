@@ -8,6 +8,7 @@ import Spinner from '../components/ui/Spinner';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import usePageTitle from '../hooks/usePageTitle';
+import { resolveFileUrl } from '../lib/assets';
 
 const ACCEPTED_EXTENSIONS = { txt: 'txt', epub: 'epub', pdf: 'pdf' };
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -242,7 +243,7 @@ function BookmarksTab() {
           <div className="relative group">
             <Link to={`/book/${book.id}`}>
               <img
-                src={book.cover_image_url || 'https://via.placeholder.com/150x225'}
+                src={resolveFileUrl(book.cover_image_url) || 'https://via.placeholder.com/150x225'}
                 alt={book.title}
                 className="w-full h-56 object-cover rounded-md shadow-md"
               />

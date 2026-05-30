@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { resolveFileUrl } from '../lib/assets';
 
 const BookCard = ({ id, title, author, cover }) => {
   return (
@@ -7,7 +8,7 @@ const BookCard = ({ id, title, author, cover }) => {
       className="block w-32 shrink-0 transition-transform hover:scale-105"
     >
       <img
-        src={cover}
+        src={resolveFileUrl(cover)}
         alt={title || 'Book'}
         className="w-full h-48 object-cover rounded-md shadow-md"
       />

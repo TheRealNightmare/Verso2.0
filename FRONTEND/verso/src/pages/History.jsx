@@ -9,6 +9,7 @@ import { fetchHistory, deleteHistory } from '../api/history';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import usePageTitle from '../hooks/usePageTitle';
+import { resolveFileUrl } from '../lib/assets';
 
 const History = () => {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ const History = () => {
           const book = entry.book;
           const title = isUpload ? upload?.title : book?.title;
           const author = isUpload ? (upload?.author || 'Unknown author') : book?.author;
-          const cover = isUpload ? null : book?.cover_image_url;
+          const cover = isUpload ? null : resolveFileUrl(book?.cover_image_url);
           const readPath = isUpload ? `/reading/upload/${upload?.id}` : `/read/${book?.id}`;
           const producer = isUpload ? `Local ${upload?.format?.toUpperCase()} file` : 'Project Gutenberg';
           const genre = isUpload ? 'Personal library' : (book?.genre || 'Literature');
