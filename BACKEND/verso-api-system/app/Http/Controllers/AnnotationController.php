@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Annotation;
+use App\Models\UserUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -55,6 +56,52 @@ class AnnotationController extends Controller
         $annotation->update($validated);
 
         return response()->json($annotation);
+    }
+
+    public function indexForUpload(Request $request, int $uploadId): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $upload = UserUpload::where('user_id', $userId)->findOrFail($uploadId);
+
+        $annotations = Annotation::where('user_id', $userId)
+            ->where(function ($q) use ($uploadId, $upload) {
+                $q->where('upload_id', $uploadId);
+                if ($upload->file_hash) {
+                    $q->orWhere('file_hash', $upload->file_hash);
+                }
+            })
+            ->orderBy('created_at')
+            ->get([
+                'id', 'upload_id', 'file_hash', 'selected_text',
+                'note', 'color', 'location', 'created_at',
+            ]);
+
+        return response()->json($annotations);
+    }
+
+    public function storeForUpload(Request $request, int $uploadId): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $upload = UserUpload::where('user_id', $userId)->findOrFail($uploadId);
+
+        $validated = $request->validate([
+            'selected_text' => ['required', 'string'],
+            'note'          => ['nullable', 'string'],
+            'color'         => ['nullable', 'string', 'max:32'],
+            'location'      => ['required', 'array'],
+        ]);
+
+        $annotation = Annotation::create([
+            'user_id'       => $userId,
+            'upload_id'     => $uploadId,
+            'file_hash'     => $upload->file_hash,
+            'selected_text' => $validated['selected_text'],
+            'note'          => $validated['note'] ?? null,
+            'color'         => $validated['color'] ?? null,
+            'location'      => $validated['location'],
+        ]);
+
+        return response()->json($annotation, 201);
     }
 
     public function destroy(Request $request, int $id): JsonResponse
