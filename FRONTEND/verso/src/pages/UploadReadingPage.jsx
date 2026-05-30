@@ -1,11 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, NotebookText } from 'lucide-react';
+import 'pdfjs-dist/web/pdf_viewer.css';
 import { fetchUploads } from '../api/uploads';
 import { getFile, putFile, sha256Hex } from '../lib/uploadStore';
-import { saveHistory } from '../api/history';
+import { saveHistory, fetchHistoryEntry } from '../api/history';
+import {
+  fetchUploadAnnotations,
+  createUploadAnnotation,
+  updateAnnotation,
+  deleteAnnotation,
+} from '../api/annotations';
 import Spinner from '../components/ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
+import AnnotationToolbar from '../components/reader/AnnotationToolbar';
+import AnnotationSidebar from '../components/reader/AnnotationSidebar';
+import NoteEditorModal from '../components/reader/NoteEditorModal';
+import { DEFAULT_HIGHLIGHT_COLOR } from '../components/reader/annotationColors';
 
 const CHARS_PER_PAGE = 1800;
 
@@ -33,20 +44,41 @@ const UploadReadingPage = () => {
 
   const [epubRendition, setEpubRendition] = useState(null);
   const [epubLoc, setEpubLoc] = useState({ current: 1, total: 1 });
+  const [epubBlob, setEpubBlob] = useState(null);
   const epubViewerRef = useRef(null);
+  const epubBootStartedRef = useRef(false);
+  const epubAppliedAnnsRef = useRef(new Map());
 
   const [pdfDoc, setPdfDoc] = useState(null);
   const pdfCanvasRef = useRef(null);
+  const pdfTextLayerRef = useRef(null);
+  const pdfHighlightsRef = useRef(null);
+  const pdfPageWrapRef = useRef(null);
+  const pdfjsModuleRef = useRef(null);
 
   const fileInputRef = useRef(null);
   const lastProgressRef = useRef(-1);
   const saveTimerRef = useRef(null);
+  const restoredRef = useRef(false);
+  const pendingResumeRef = useRef(null);
+
+  // Annotation state
+  const [annotations, setAnnotations] = useState([]);
+  const [selectionInfo, setSelectionInfo] = useState(null); // { rect, payload }
+  const [editingAnn, setEditingAnn] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
     setNeedsReupload(false);
+    setEpubBlob(null);
+    setEpubRendition(null);
+    epubBootStartedRef.current = false;
+    restoredRef.current = false;
+    pendingResumeRef.current = null;
 
     (async () => {
       try {
@@ -59,6 +91,15 @@ const UploadReadingPage = () => {
           return;
         }
         setUpload(meta);
+
+        const historyEntry = await fetchHistoryEntry({ uploadId: meta.id }).catch(() => null);
+        if (cancelled) return;
+        const savedPage = Number(historyEntry?.current_page);
+        if (Number.isFinite(savedPage) && savedPage > 0) {
+          pendingResumeRef.current = savedPage;
+        } else {
+          restoredRef.current = true;
+        }
 
         const blob = await getFile(meta.file_hash);
         if (cancelled) return;
@@ -85,52 +126,203 @@ const UploadReadingPage = () => {
     return () => { cancelled = true; };
   }, [uploadId, navigate]);
 
+  // Load annotations once upload is known
+  useEffect(() => {
+    if (!upload?.id) return;
+    let cancelled = false;
+    fetchUploadAnnotations(upload.id)
+      .then((rows) => { if (!cancelled) setAnnotations(rows || []); })
+      .catch((err) => console.error('Failed to load annotations', err));
+    return () => { cancelled = true; };
+  }, [upload?.id]);
+
   useEffect(() => () => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (epubRendition) {
       try { epubRendition.destroy(); } catch { /* ignore */ }
+      epubBootStartedRef.current = false;
+      epubAppliedAnnsRef.current = new Map();
     }
   }, [epubRendition]);
 
   const renderForFormat = async (meta, blob) => {
     if (meta.format === 'txt') {
       const text = await blob.text();
-      setTextPages(paginateText(text));
-      setCurrentPage(0);
+      const pages = paginateText(text);
+      setTextPages(pages);
+      const resumeAt = pendingResumeRef.current;
+      const startPage = (resumeAt != null)
+        ? Math.max(0, Math.min(resumeAt, pages.length - 1))
+        : 0;
+      setCurrentPage(startPage);
+      restoredRef.current = true;
+      pendingResumeRef.current = null;
     } else if (meta.format === 'epub') {
-      const ePub = (await import('epubjs')).default;
-      const buf = await blob.arrayBuffer();
-      const book = ePub(buf);
-      const rendition = book.renderTo(epubViewerRef.current, {
-        width: '100%',
-        height: '100%',
-        spread: 'auto', // single page on narrow screens, two-page spread when wide
-      });
-      await rendition.display();
-      await book.locations.generate(1600);
-      rendition.on('relocated', (loc) => {
-        const cur = loc?.start?.location ?? 1;
-        const total = book.locations.length() || 1;
-        setEpubLoc({ current: cur, total });
-        const progress = Math.max(0, Math.min(100, Math.round((cur / total) * 100)));
-        queueProgress(meta.id, progress);
-      });
-      setEpubRendition(rendition);
+      setEpubBlob(blob);
+      // EPUB navigates by CFI, not page index — skip resume for this format.
+      restoredRef.current = true;
+      pendingResumeRef.current = null;
     } else if (meta.format === 'pdf') {
       const pdfjs = await import('pdfjs-dist');
       const workerSrc = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
       pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+      pdfjsModuleRef.current = pdfjs;
       const buf = await blob.arrayBuffer();
       const doc = await pdfjs.getDocument({ data: buf }).promise;
       setPdfDoc(doc);
-      setCurrentPage(0);
+      const resumeAt = pendingResumeRef.current;
+      const startPage = (resumeAt != null)
+        ? Math.max(0, Math.min(resumeAt, doc.numPages - 1))
+        : 0;
+      setCurrentPage(startPage);
+      restoredRef.current = true;
+      pendingResumeRef.current = null;
     }
   };
+
+  // ---------------- EPUB ----------------
+
+  useEffect(() => {
+    if (upload?.format !== 'epub' || !epubBlob || !epubViewerRef.current) return;
+    if (epubBootStartedRef.current) return;
+    epubBootStartedRef.current = true;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const ePub = (await import('epubjs')).default;
+        const buf = await epubBlob.arrayBuffer();
+        if (cancelled) return;
+        const book = ePub(buf);
+        const rendition = book.renderTo(epubViewerRef.current, {
+          width: '100%',
+          height: '100%',
+          flow: 'paginated',
+          spread: 'none',
+        });
+        await rendition.display();
+        if (cancelled) return;
+        rendition.on('relocated', (loc) => {
+          const cfi = loc?.start?.cfi;
+          const total = book.locations.length() || 0;
+          let cur = 1;
+          if (cfi && total > 0) {
+            const pct = book.locations.percentageFromCfi(cfi);
+            cur = Math.max(1, Math.min(total, Math.round(pct * total) || 1));
+          }
+          setEpubLoc((prev) => ({
+            current: cur,
+            total: total > 0 ? total : prev.total,
+          }));
+          const denom = Math.max(1, (total || 1) - 1);
+          const progress = Math.max(0, Math.min(100, Math.round(((cur - 1) / denom) * 100)));
+          queueProgress(upload.id, progress);
+        });
+        rendition.book = book;
+        setEpubRendition(rendition);
+
+        // Generate locations in the background so first paint isn't blocked.
+        book.locations.generate(1600).then(() => {
+          if (cancelled) return;
+          const total = book.locations.length() || 1;
+          setEpubLoc((prev) => ({ ...prev, total }));
+        }).catch((err) => {
+          console.warn('EPUB locations.generate failed', err);
+        });
+      } catch (err) {
+        if (!cancelled) {
+          epubBootStartedRef.current = false;
+          setError(err?.message || 'Failed to render EPUB.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [upload?.format, upload?.id, epubBlob]);
+
+  // Hook up EPUB selection -> toolbar
+  useEffect(() => {
+    if (!epubRendition) return;
+    const onSelected = (cfiRange, contents) => {
+      try {
+        const sel = contents.window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        const text = range.toString().trim();
+        if (!text) return;
+        const innerRect = range.getBoundingClientRect();
+        const iframeEl = contents.window.frameElement;
+        const iframeRect = iframeEl?.getBoundingClientRect() || { top: 0, left: 0 };
+        const rect = {
+          top: innerRect.top + iframeRect.top,
+          left: innerRect.left + iframeRect.left,
+          width: innerRect.width,
+          height: innerRect.height,
+        };
+        setSelectionInfo({
+          rect,
+          payload: {
+            selected_text: text,
+            location: { type: 'epub', cfiRange },
+          },
+          source: 'epub',
+          contents,
+        });
+      } catch (err) {
+        console.error('EPUB selection error', err);
+      }
+    };
+    epubRendition.on('selected', onSelected);
+    return () => {
+      try { epubRendition.off('selected', onSelected); } catch { /* ignore */ }
+    };
+  }, [epubRendition]);
+
+  // Render existing EPUB highlights (idempotent diff against currently-applied set)
+  useEffect(() => {
+    if (!epubRendition) return;
+    const applied = epubAppliedAnnsRef.current;
+    const wanted = new Map(
+      annotations
+        .filter((a) => a.location?.type === 'epub' && a.location.cfiRange)
+        .map((a) => [a.id, a])
+    );
+
+    for (const [id, cfi] of applied) {
+      if (!wanted.has(id)) {
+        try { epubRendition.annotations.remove(cfi, 'highlight'); } catch { /* ignore */ }
+        applied.delete(id);
+      }
+    }
+
+    for (const [id, a] of wanted) {
+      if (applied.has(id)) continue;
+      try {
+        epubRendition.annotations.add(
+          'highlight',
+          a.location.cfiRange,
+          { id },
+          () => openEditor(a),
+          `hl-${id}`,
+          { fill: a.color || DEFAULT_HIGHLIGHT_COLOR, 'fill-opacity': '0.4', 'mix-blend-mode': 'multiply' }
+        );
+        applied.set(id, a.location.cfiRange);
+      } catch (err) {
+        console.error('EPUB highlight add failed', err);
+      }
+    }
+  }, [epubRendition, annotations]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------------- PDF ----------------
 
   useEffect(() => {
     if (!pdfDoc || !pdfCanvasRef.current) return;
     let cancelled = false;
     (async () => {
+      const pdfjs = pdfjsModuleRef.current;
       const page = await pdfDoc.getPage(currentPage + 1);
       if (cancelled) return;
       const viewport = page.getViewport({ scale: 1.4 });
@@ -139,24 +331,184 @@ const UploadReadingPage = () => {
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       await page.render({ canvasContext: ctx, viewport }).promise;
-      const progress = Math.max(0, Math.min(100, Math.round(((currentPage + 1) / pdfDoc.numPages) * 100)));
-      queueProgress(upload?.id, progress);
+      if (cancelled) return;
+
+      // Size the page wrapper to match the canvas
+      if (pdfPageWrapRef.current) {
+        pdfPageWrapRef.current.style.width = viewport.width + 'px';
+        pdfPageWrapRef.current.style.height = viewport.height + 'px';
+      }
+
+      // Render text layer for selection
+      const textLayerDiv = pdfTextLayerRef.current;
+      if (textLayerDiv && pdfjs?.TextLayer) {
+        textLayerDiv.innerHTML = '';
+        textLayerDiv.style.setProperty('--scale-factor', String(viewport.scale));
+        textLayerDiv.style.width = viewport.width + 'px';
+        textLayerDiv.style.height = viewport.height + 'px';
+        try {
+          const textContent = await page.getTextContent();
+          if (cancelled) return;
+          const textLayer = new pdfjs.TextLayer({
+            textContentSource: textContent,
+            container: textLayerDiv,
+            viewport,
+          });
+          await textLayer.render();
+        } catch (err) {
+          console.error('Text layer render failed', err);
+        }
+      }
+
+      const denom = Math.max(1, pdfDoc.numPages - 1);
+      const progress = Math.max(0, Math.min(100, Math.round((currentPage / denom) * 100)));
+      queueProgress(upload?.id, progress, currentPage);
     })().catch(console.error);
     return () => { cancelled = true; };
   }, [pdfDoc, currentPage, upload?.id]);
 
+  // PDF text-selection handler
+  const handlePdfMouseUp = useCallback(() => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      setSelectionInfo(null);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const text = range.toString().trim();
+    if (!text) {
+      setSelectionInfo(null);
+      return;
+    }
+    const container = pdfTextLayerRef.current;
+    if (!container || !container.contains(range.commonAncestorContainer)) {
+      return;
+    }
+    const containerRect = container.getBoundingClientRect();
+    const w = containerRect.width;
+    const h = containerRect.height;
+    const rects = Array.from(range.getClientRects())
+      .filter((r) => r.width > 0 && r.height > 0)
+      .map((r) => ({
+        x: (r.left - containerRect.left) / w,
+        y: (r.top - containerRect.top) / h,
+        w: r.width / w,
+        h: r.height / h,
+      }));
+    if (rects.length === 0) {
+      setSelectionInfo(null);
+      return;
+    }
+    const bRect = range.getBoundingClientRect();
+    setSelectionInfo({
+      rect: { top: bRect.top, left: bRect.left, width: bRect.width, height: bRect.height },
+      payload: {
+        selected_text: text,
+        location: {
+          type: 'pdf',
+          page: currentPage + 1,
+          quads: rects,
+        },
+      },
+      source: 'pdf',
+    });
+  }, [currentPage]);
+
+  // ---------------- Save / edit / delete ----------------
+
+  const persistCreate = async (payload, openNote = false) => {
+    const cfiBefore =
+      payload.location?.type === 'epub'
+        ? epubRendition?.currentLocation()?.start?.cfi
+        : null;
+    try {
+      const created = await createUploadAnnotation(upload.id, payload);
+      setAnnotations((prev) => [...prev, created]);
+      // Clear selection
+      try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+      setSelectionInfo(null);
+      if (cfiBefore && epubRendition) {
+        requestAnimationFrame(() => {
+          try { epubRendition.display(cfiBefore); } catch { /* ignore */ }
+        });
+      }
+      if (openNote) openEditor(created);
+    } catch (err) {
+      console.error('Failed to save annotation', err);
+      setError(err?.message || 'Failed to save annotation');
+    }
+  };
+
+  const createHighlight = (color, openNote = false) => {
+    if (!selectionInfo) return;
+    persistCreate({ ...selectionInfo.payload, color }, openNote);
+  };
+
+  const openEditor = (ann) => {
+    setEditingAnn(ann);
+    setNoteDraft(ann.note || '');
+  };
+
+  const saveNote = async () => {
+    if (!editingAnn) return;
+    try {
+      const updated = await updateAnnotation(editingAnn.id, { note: noteDraft });
+      setAnnotations((prev) => prev.map((a) => (a.id === editingAnn.id ? { ...a, ...updated } : a)));
+      setEditingAnn(null);
+      setNoteDraft('');
+    } catch (err) {
+      console.error('Failed to save note', err);
+    }
+  };
+
+  const removeAnnotation = async (annId) => {
+    const target = annotations.find((a) => a.id === annId);
+    try {
+      await deleteAnnotation(annId);
+    } catch (err) {
+      console.error('Failed to delete annotation', err);
+    }
+    setAnnotations((prev) => prev.filter((a) => a.id !== annId));
+    if (editingAnn?.id === annId) setEditingAnn(null);
+    // Remove EPUB visual highlight
+    if (target && target.location?.type === 'epub' && epubRendition) {
+      try { epubRendition.annotations.remove(target.location.cfiRange, 'highlight'); } catch { /* ignore */ }
+    }
+  };
+
+  const jumpToAnnotation = (ann) => {
+    const loc = ann.location;
+    if (!loc) return;
+    if (loc.type === 'pdf' && pdfDoc) {
+      setCurrentPage(Math.max(0, Math.min(pdfDoc.numPages - 1, loc.page - 1)));
+    } else if (loc.type === 'epub' && epubRendition && loc.cfiRange) {
+      try { epubRendition.display(loc.cfiRange); } catch { /* ignore */ }
+    }
+    setIsSidebarOpen(false);
+  };
+
+  const locationLabel = (ann) => {
+    if (ann.location?.type === 'pdf') return `Page ${ann.location.page}`;
+    if (ann.location?.type === 'epub') return 'EPUB';
+    return '';
+  };
+
+  // ---------------- Misc ----------------
+
   useEffect(() => {
     if (!textPages || !upload) return;
-    const progress = Math.max(0, Math.min(100, Math.round(((currentPage + 1) / textPages.length) * 100)));
-    queueProgress(upload.id, progress);
+    const denom = Math.max(1, textPages.length - 1);
+    const progress = Math.max(0, Math.min(100, Math.round((currentPage / denom) * 100)));
+    queueProgress(upload.id, progress, currentPage);
   }, [textPages, currentPage, upload]);
 
-  const queueProgress = (id, progress) => {
+  const queueProgress = (id, progress, pageIndex = null) => {
     if (!id || progress === lastProgressRef.current) return;
+    if (!restoredRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       lastProgressRef.current = progress;
-      saveHistory({ uploadId: id, progress }).catch(console.error);
+      saveHistory({ uploadId: id, progress, currentPage: pageIndex }).catch(console.error);
     }, 800);
   };
 
@@ -220,6 +572,8 @@ const UploadReadingPage = () => {
     );
   }
 
+  const supportsAnnotations = upload?.format === 'pdf' || upload?.format === 'epub';
+
   const renderHeader = (centerLabel, footerLabel) => (
     <>
       <header className="grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5 bg-[#f8f6f2]">
@@ -233,11 +587,48 @@ const UploadReadingPage = () => {
           <h2 className="text-sm sm:text-lg font-semibold text-[#2c3e50] truncate">{upload?.title}</h2>
           <h3 className="text-[10px] sm:text-xs uppercase tracking-wider text-[#2c3e50]/60">{centerLabel}</h3>
         </div>
-        <div />
+        <div className="justify-self-end">
+          {supportsAnnotations && (
+            <button
+              onClick={() => setIsSidebarOpen((o) => !o)}
+              className={`inline-flex items-center gap-1 text-sm ${isSidebarOpen ? 'text-[#5b7c99]' : 'text-[#2c3e50] hover:text-[#5b7c99]'}`}
+              aria-label="Toggle annotations"
+            >
+              <NotebookText size={20} />
+            </button>
+          )}
+        </div>
       </header>
       <footer className="flex items-center justify-center py-3 sm:py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
         {footerLabel}
       </footer>
+    </>
+  );
+
+  const annotationChrome = (
+    <>
+      <AnnotationToolbar
+        rect={selectionInfo?.rect}
+        onColor={(c) => createHighlight(c)}
+        onNote={(c) => createHighlight(c, true)}
+      />
+      <AnnotationSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        annotations={annotations}
+        getLocationLabel={locationLabel}
+        onJump={jumpToAnnotation}
+        onEdit={openEditor}
+        onDelete={removeAnnotation}
+      />
+      <NoteEditorModal
+        ann={editingAnn}
+        draft={noteDraft}
+        onDraftChange={setNoteDraft}
+        onSave={saveNote}
+        onDelete={removeAnnotation}
+        onClose={() => setEditingAnn(null)}
+      />
     </>
   );
 
@@ -273,48 +664,93 @@ const UploadReadingPage = () => {
 
   if (upload?.format === 'epub') {
     return (
-      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
-        {renderHeader('EPUB', `${epubLoc.current}/${epubLoc.total}`)}
-        <main className="relative flex-1 flex items-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-hidden">
-          <button
-            onClick={() => epubRendition?.prev()}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
-          >
-            <ChevronLeft size={32} strokeWidth={1.5} />
-          </button>
-          <div ref={epubViewerRef} className="flex-1 h-full" />
-          <button
-            onClick={() => epubRendition?.next()}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
-          >
-            <ChevronRight size={32} strokeWidth={1.5} />
-          </button>
-        </main>
+      <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
+        <div className="flex flex-col flex-1 min-w-0">
+          {renderHeader('EPUB', `${epubLoc.current}/${epubLoc.total}`)}
+          <main className="relative flex-1 flex items-stretch justify-center px-3 sm:px-8 lg:px-12 py-4 sm:py-6 overflow-hidden">
+            <button
+              onClick={() => epubRendition?.prev()}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
+            >
+              <ChevronLeft size={32} strokeWidth={1.5} />
+            </button>
+            <div className="w-full max-w-205 h-full">
+              <div ref={epubViewerRef} className="w-full h-full" />
+            </div>
+            <button
+              onClick={() => epubRendition?.next()}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
+            >
+              <ChevronRight size={32} strokeWidth={1.5} />
+            </button>
+          </main>
+        </div>
+        {annotationChrome}
       </div>
     );
   }
 
   if (upload?.format === 'pdf' && pdfDoc) {
+    const currentPageHighlights = annotations.filter(
+      (a) => a.location?.type === 'pdf' && a.location.page === currentPage + 1
+    );
     return (
-      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
-        {renderHeader('PDF', `${currentPage + 1}/${pdfDoc.numPages}`)}
-        <main className="relative flex-1 flex items-center justify-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-auto">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-            disabled={currentPage <= 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
-          >
-            <ChevronLeft size={32} strokeWidth={1.5} />
-          </button>
-          <canvas ref={pdfCanvasRef} className="shadow-md bg-white max-w-full h-auto" />
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(pdfDoc.numPages - 1, p + 1))}
-            disabled={currentPage >= pdfDoc.numPages - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
-          >
-            <ChevronRight size={32} strokeWidth={1.5} />
-          </button>
-        </main>
+      <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
+        <div className="flex flex-col flex-1 min-w-0">
+          {renderHeader('PDF', `${currentPage + 1}/${pdfDoc.numPages}`)}
+          <main className="relative flex-1 flex items-center justify-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-auto">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage <= 0}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
+            >
+              <ChevronLeft size={32} strokeWidth={1.5} />
+            </button>
+            <div
+              ref={pdfPageWrapRef}
+              className="relative shadow-md bg-white"
+              style={{ maxWidth: '100%' }}
+              onMouseUp={handlePdfMouseUp}
+            >
+              <canvas ref={pdfCanvasRef} className="block bg-white max-w-full h-auto" />
+              <div
+                ref={pdfHighlightsRef}
+                className="absolute inset-0 pointer-events-none"
+              >
+                {currentPageHighlights.map((a) =>
+                  (a.location.quads || []).map((q, i) => (
+                    <div
+                      key={`${a.id}-${i}`}
+                      className="absolute"
+                      style={{
+                        left: `${q.x * 100}%`,
+                        top: `${q.y * 100}%`,
+                        width: `${q.w * 100}%`,
+                        height: `${q.h * 100}%`,
+                        backgroundColor: a.color || DEFAULT_HIGHLIGHT_COLOR,
+                        opacity: 0.4,
+                        mixBlendMode: 'multiply',
+                      }}
+                      title={a.note || ''}
+                    />
+                  ))
+                )}
+              </div>
+              <div
+                ref={pdfTextLayerRef}
+                className="textLayer absolute inset-0"
+              />
+            </div>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(pdfDoc.numPages - 1, p + 1))}
+              disabled={currentPage >= pdfDoc.numPages - 1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
+            >
+              <ChevronRight size={32} strokeWidth={1.5} />
+            </button>
+          </main>
+        </div>
+        {annotationChrome}
       </div>
     );
   }

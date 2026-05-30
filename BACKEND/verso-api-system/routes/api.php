@@ -48,6 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Annotations (per-page highlights + notes)
     Route::get   ('/books/{bookId}/annotations', [AnnotationController::class, 'index']);
     Route::post  ('/books/{bookId}/annotations', [AnnotationController::class, 'store']);
+    Route::get   ('/uploads/{uploadId}/annotations', [AnnotationController::class, 'indexForUpload']);
+    Route::post  ('/uploads/{uploadId}/annotations', [AnnotationController::class, 'storeForUpload']);
     Route::patch ('/annotations/{id}',           [AnnotationController::class, 'update']);
     Route::delete('/annotations/{id}',           [AnnotationController::class, 'destroy']);
 

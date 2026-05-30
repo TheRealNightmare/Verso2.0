@@ -26,6 +26,7 @@ class HistoryController extends Controller
             'book_id'        => ['nullable', 'required_without:user_upload_id', 'integer', 'exists:books,id'],
             'user_upload_id' => ['nullable', 'required_without:book_id', 'integer', 'exists:user_uploads,id'],
             'progress'       => ['required', 'integer', 'min:0', 'max:100'],
+            'current_page'   => ['nullable', 'integer', 'min:0'],
         ]);
 
         if (!empty($validated['book_id']) && !empty($validated['user_upload_id'])) {
@@ -49,10 +50,12 @@ class HistoryController extends Controller
             ? ['user_id' => $request->user()->id, 'book_id' => $validated['book_id'], 'user_upload_id' => null]
             : ['user_id' => $request->user()->id, 'book_id' => null, 'user_upload_id' => $validated['user_upload_id']];
 
-        $history = ReadingHistory::updateOrCreate(
-            $key,
-            ['progress' => $validated['progress'], 'last_read_at' => now()]
-        );
+        $values = ['progress' => $validated['progress'], 'last_read_at' => now()];
+        if (array_key_exists('current_page', $validated) && $validated['current_page'] !== null) {
+            $values['current_page'] = $validated['current_page'];
+        }
+
+        $history = ReadingHistory::updateOrCreate($key, $values);
 
         return response()->json($history, 200);
     }

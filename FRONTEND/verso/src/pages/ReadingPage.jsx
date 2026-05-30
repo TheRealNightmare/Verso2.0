@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3, Trash2, X } from 'lucide-react';
 import { fetchBookContent } from '../api/content';
-import { saveHistory } from '../api/history';
+import { saveHistory, fetchHistoryEntry } from '../api/history';
 import {
   fetchAnnotations,
   createAnnotation,
@@ -107,15 +107,29 @@ const ReadingPage = () => {
   const rightRef = useRef(null);
   const saveTimerRef = useRef(null);
   const lastProgressRef = useRef(null);
+  const restoredRef = useRef(false);
+  const pendingResumeRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([fetchBookContent(id), fetchAnnotations(id).catch(() => [])])
-      .then(([content, anns]) => {
+    restoredRef.current = false;
+    pendingResumeRef.current = null;
+    Promise.all([
+      fetchBookContent(id),
+      fetchAnnotations(id).catch(() => []),
+      fetchHistoryEntry({ bookId: Number(id) }).catch(() => null),
+    ])
+      .then(([content, anns, historyEntry]) => {
         if (cancelled) return;
         setChapters(content.chapters || []);
         setAnnotations(Array.isArray(anns) ? anns : []);
+        const savedPage = Number(historyEntry?.current_page);
+        if (Number.isFinite(savedPage) && savedPage > 0) {
+          pendingResumeRef.current = savedPage;
+        } else {
+          restoredRef.current = true;
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -133,23 +147,40 @@ const ReadingPage = () => {
 
   const pages = useMemo(() => chaptersToPages(chapters), [chapters]);
 
-  const queueProgress = (progress) => {
+  const queueProgress = (progress, pageIndex) => {
     if (progress === lastProgressRef.current) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       lastProgressRef.current = progress;
-      saveHistory({ bookId: Number(id), progress }).catch(console.error);
+      saveHistory({ bookId: Number(id), progress, currentPage: pageIndex }).catch(console.error);
     }, 800);
   };
+
+  // Restore the last read page once pages have been computed.
+  useEffect(() => {
+    if (restoredRef.current) return;
+    if (!pages.length) return;
+    const resumeAt = pendingResumeRef.current;
+    if (resumeAt == null) {
+      restoredRef.current = true;
+      return;
+    }
+    const clamped = Math.max(0, Math.min(resumeAt, pages.length - 1));
+    restoredRef.current = true;
+    pendingResumeRef.current = null;
+    setCurrentPage(clamped);
+  }, [pages.length]);
 
   // Record reading progress on open (page 0) and on every page turn.
   useEffect(() => {
     if (!pages.length) return;
+    if (!restoredRef.current) return;
+    const denom = Math.max(1, pages.length - 1);
     const progress = Math.max(
       0,
-      Math.min(100, Math.round(((currentPage + 1) / pages.length) * 100)),
+      Math.min(100, Math.round((currentPage / denom) * 100)),
     );
-    queueProgress(progress);
+    queueProgress(progress, currentPage);
   }, [currentPage, pages.length]);
 
   useEffect(() => () => {

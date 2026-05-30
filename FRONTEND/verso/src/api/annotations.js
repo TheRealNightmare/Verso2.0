@@ -16,3 +16,12 @@ export const updateAnnotation = (id, payload) =>
 
 export const deleteAnnotation = (id) =>
   apiFetch(`/annotations/${id}`, { method: 'DELETE' });
+
+export const fetchUploadAnnotations = (uploadId) =>
+  apiFetch(`/uploads/${uploadId}/annotations`);
+
+export const createUploadAnnotation = (uploadId, payload) =>
+  apiFetch(`/uploads/${uploadId}/annotations`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });

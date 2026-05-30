@@ -106,8 +106,19 @@ const History = () => {
                     author={author}
                     genre={genre}
                     producer={producer}
-                    status={`${entry.progress}%`}
                   />
+
+                  <div className="mt-2">
+                    <div className="relative h-3 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-linear-to-r from-[#4f7aa3] to-[#bcd2e8] transition-all"
+                        style={{ width: `${Math.max(0, Math.min(100, entry.progress || 0))}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500 text-right">
+                      {entry.progress || 0}% read
+                    </div>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                     <Button onClick={() => navigate(readPath)} className="px-4 py-1.5">
