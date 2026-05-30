@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReadingHistory extends Model
 {
-    protected $fillable = ['user_id', 'book_id', 'user_upload_id', 'progress', 'last_read_at'];
+    protected $fillable = ['user_id', 'book_id', 'user_upload_id', 'progress', 'current_page', 'last_read_at'];
 
     protected $casts = [
         'last_read_at' => 'datetime',
+        'progress' => 'int',
+        'current_page' => 'int',
     ];
 
     public function user()
