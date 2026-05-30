@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnnotationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AuthorBookController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\BookContentController;
 use App\Http\Controllers\BookmarkController;
@@ -114,6 +115,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // People search + public profiles
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}',   [UserController::class, 'show']);
+    Route::get('/users/{id}/books', [BookController::class, 'byAuthor']);
+
+    // Author-published books
+    Route::get   ('/me/books',          [BookController::class, 'myUploads']);
+    Route::post  ('/author/books',      [AuthorBookController::class, 'store']);
+    Route::post  ('/author/books/{id}', [AuthorBookController::class, 'update']); // multipart PATCH via _method
+    Route::delete('/author/books/{id}', [AuthorBookController::class, 'destroy']);
 
     // Friendships (request / accept flow)
     Route::get   ('/friends',                        [FriendshipController::class, 'index']);
