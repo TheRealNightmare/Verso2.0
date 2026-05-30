@@ -11,6 +11,7 @@ class Book extends Model
         'title', 'author', 'description', 'cover_image_url',
         'genre', 'producer', 'release_status', 'bestseller_tag',
         'average_rating', 'published_year', 'gutenberg_id', 'is_exclusive',
+        'author_id', 'source',
     ];
 
     protected $appends = ['is_bookmarked', 'is_favorited'];
@@ -18,6 +19,11 @@ class Book extends Model
     public function content()
     {
         return $this->hasOne(BookContent::class);
+    }
+
+    public function authorUser()
+    {
+        return $this->belongsTo(User::class, 'author_id');
     }
 
     public function reviews()
