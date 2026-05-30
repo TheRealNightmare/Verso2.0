@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'avatar_url', 'date_of_birth', 'gender', 'points', 'last_seen_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'avatar_url', 'date_of_birth', 'gender', 'bio', 'points', 'last_seen_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -84,6 +84,16 @@ class User extends Authenticatable
      *
      * @return \Illuminate\Support\Collection<int, int>
      */
+    public function publishedBooks()
+    {
+        return $this->hasMany(Book::class, 'author_id');
+    }
+
+    public function isAuthor(): bool
+    {
+        return $this->role === 'author';
+    }
+
     public function friendIds()
     {
         return Friendship::query()
