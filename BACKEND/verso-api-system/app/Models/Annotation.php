@@ -9,6 +9,8 @@ class Annotation extends Model
     protected $fillable = [
         'user_id',
         'book_id',
+        'upload_id',
+        'file_hash',
         'page_index',
         'column',
         'start_offset',
@@ -16,12 +18,14 @@ class Annotation extends Model
         'selected_text',
         'note',
         'color',
+        'location',
     ];
 
     protected $casts = [
         'page_index'   => 'integer',
         'start_offset' => 'integer',
         'end_offset'   => 'integer',
+        'location'     => 'array',
     ];
 
     public function user()
@@ -32,5 +36,10 @@ class Annotation extends Model
     public function book()
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function upload()
+    {
+        return $this->belongsTo(UserUpload::class, 'upload_id');
     }
 }
