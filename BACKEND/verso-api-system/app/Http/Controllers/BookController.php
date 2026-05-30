@@ -61,9 +61,28 @@ class BookController extends Controller
     public function show(int $id): JsonResponse
     {
         $book = Book::withCount('reviews')
-            ->with(['reviews.user:id,name,avatar_url'])
+            ->with(['reviews.user:id,name,avatar_url', 'authorUser:id,name,avatar_url'])
             ->findOrFail($id);
 
         return response()->json($book);
+    }
+
+    public function byAuthor(int $userId): JsonResponse
+    {
+        $books = Book::where('author_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($books);
+    }
+
+    public function myUploads(Request $request): JsonResponse
+    {
+        $books = Book::where('author_id', $request->user()->id)
+            ->withCount(['reviews', 'favorites'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($books);
     }
 }
