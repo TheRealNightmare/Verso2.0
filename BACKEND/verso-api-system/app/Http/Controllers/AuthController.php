@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -15,12 +16,21 @@ class AuthController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8'],
+            'avatar'   => ['required', 'image', 'max:5120'],
+            'role'     => ['required', 'in:user,author'],
+            'bio'      => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $avatarPath = $request->file('avatar')->store('avatars', 'public');
+        $avatarUrl  = Storage::disk('public')->url($avatarPath);
+
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => $validated['password'],
+            'name'       => $validated['name'],
+            'email'      => $validated['email'],
+            'password'   => $validated['password'],
+            'role'       => $validated['role'] === 'author' ? 'author' : null,
+            'avatar_url' => $avatarUrl,
+            'bio'        => $validated['role'] === 'author' ? ($validated['bio'] ?? null) : null,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -31,7 +41,9 @@ class AuthController extends Controller
                 'id'        => $user->id,
                 'name'      => $user->name,
                 'email'     => $user->email,
+                'role'      => $user->role,
                 'avatarUrl' => $user->avatar_url,
+                'bio'       => $user->bio,
             ],
         ], 201);
     }
@@ -58,7 +70,9 @@ class AuthController extends Controller
                 'id'        => $user->id,
                 'name'      => $user->name,
                 'email'     => $user->email,
+                'role'      => $user->role,
                 'avatarUrl' => $user->avatar_url,
+                'bio'       => $user->bio,
             ],
         ], 200);
     }
