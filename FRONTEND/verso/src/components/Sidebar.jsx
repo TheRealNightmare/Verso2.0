@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Home, History, Bookmark, Grid, Calendar, Users, MessageSquare, X } from 'lucide-react';
+import { BookOpen, Home, History, Bookmark, Grid, Calendar, Users, MessageSquare, X, Upload, Library } from 'lucide-react';
 import { useNotifications } from '../context/NotificationsContext';
+import { useAuth } from '../context/AuthContext';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', icon: Home, label: 'Home', match: (p) => p === '/' },
   { to: '/history', icon: History, label: 'History', match: (p) => p === '/history' },
   { to: '/storage', icon: Bookmark, label: 'Storage', match: (p) => p === '/storage' },
@@ -13,9 +14,16 @@ const navItems = [
   { to: '/messages', icon: MessageSquare, label: 'Messages', match: (p) => p.startsWith('/messages'), badge: 'unread' },
 ];
 
+const authorNavItems = [
+  { to: '/author/publish', icon: Upload, label: 'Publish', match: (p) => p === '/author/publish' },
+  { to: '/author/dashboard', icon: Library, label: 'My Books', match: (p) => p === '/author/dashboard' },
+];
+
 const Sidebar = ({ open = false, onClose = () => {} }) => {
   const location = useLocation();
   const { unreadTotal } = useNotifications();
+  const { user } = useAuth();
+  const navItems = user?.role === 'author' ? [...baseNavItems, ...authorNavItems] : baseNavItems;
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
