@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Book;
 use App\Models\Favorite;
 use App\Models\Friendship;
 use App\Models\ReadingHistory;
@@ -37,13 +38,14 @@ class UserController extends Controller
             })
             ->orderBy('name')
             ->limit(8)
-            ->get(['id', 'name', 'avatar_url', 'last_seen_at']);
+            ->get(['id', 'name', 'avatar_url', 'role', 'last_seen_at']);
 
         return response()->json([
             'data' => $users->map(fn ($u) => [
                 'id'           => $u->id,
                 'name'         => $u->name,
                 'avatarUrl'    => $u->avatar_url,
+                'role'         => $u->role,
                 'online'       => $this->isOnline($u),
                 'friendStatus' => $me->friendStatusWith($u->id),
             ]),
@@ -83,18 +85,23 @@ class UserController extends Controller
             $pendingRequestId = optional($me->friendshipWith($user->id))->id;
         }
 
+        $publishedBooksCount = Book::where('author_id', $id)->count();
+
         return response()->json([
-            'id'               => $user->id,
-            'name'             => $user->name,
-            'avatarUrl'        => $user->avatar_url,
-            'points'           => $user->points,
-            'online'           => $this->isOnline($user),
-            'lastSeenAt'       => optional($user->last_seen_at)->toIso8601String(),
-            'friendCount'      => $friendCount,
-            'stats'            => $stats,
-            'isSelf'           => $isSelf,
-            'friendStatus'     => $friendStatus,
-            'pendingRequestId' => $pendingRequestId,
+            'id'                  => $user->id,
+            'name'                => $user->name,
+            'avatarUrl'           => $user->avatar_url,
+            'role'                => $user->role,
+            'bio'                 => $user->bio,
+            'points'              => $user->points,
+            'online'              => $this->isOnline($user),
+            'lastSeenAt'          => optional($user->last_seen_at)->toIso8601String(),
+            'friendCount'         => $friendCount,
+            'publishedBooksCount' => $publishedBooksCount,
+            'stats'               => $stats,
+            'isSelf'              => $isSelf,
+            'friendStatus'        => $friendStatus,
+            'pendingRequestId'    => $pendingRequestId,
         ]);
     }
 
