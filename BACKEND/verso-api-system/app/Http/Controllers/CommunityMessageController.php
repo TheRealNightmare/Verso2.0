@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Events\CommunityMessageDeleted;
 use App\Events\CommunityMessageSent;
 use App\Events\CommunityMessageUpdated;
+use App\Jobs\DetectSpoilerJob;
 use App\Models\CommunityMessage;
 use App\Models\CommunityReaction;
+use App\Services\GeminiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,10 +66,13 @@ class CommunityMessageController extends Controller
         $type   = $request->input('type', 'text');
 
         $base = $request->validate([
-            'type'      => ['required', 'in:text,audio,image'],
-            'body'      => ['nullable', 'string', 'max:5000'],
-            'parent_id' => ['nullable', 'integer', 'exists:community_messages,id'],
+            'type'       => ['required', 'in:text,audio,image'],
+            'body'       => ['nullable', 'string', 'max:5000'],
+            'parent_id'  => ['nullable', 'integer', 'exists:community_messages,id'],
+            'is_spoiler' => ['nullable', 'boolean'],
         ]);
+
+        $selfTag = $request->boolean('is_spoiler');
 
         if (! empty($base['parent_id'])) {
             $parent = CommunityMessage::findOrFail((int) $base['parent_id']);
@@ -77,11 +82,19 @@ class CommunityMessageController extends Controller
         }
 
         $data = [
-            'user_id'   => $userId,
-            'type'      => $type,
-            'body'      => $base['body'] ?? null,
-            'parent_id' => $base['parent_id'] ?? null,
+            'user_id'    => $userId,
+            'type'       => $type,
+            'body'       => $base['body'] ?? null,
+            'parent_id'  => $base['parent_id'] ?? null,
+            'is_spoiler' => false,
         ];
+
+        if ($selfTag) {
+            // Author marked it — flag immediately and skip AI detection.
+            $data['is_spoiler']         = true;
+            $data['spoiler_source']     = 'user';
+            $data['spoiler_checked_at'] = now();
+        }
 
         if ($type === 'audio') {
             $audio = $request->validate([
@@ -107,6 +120,14 @@ class CommunityMessageController extends Controller
         $payload = $this->shape($message, $userId);
 
         broadcast(new CommunityMessageSent($payload))->toOthers();
+
+        // Async AI spoiler detection for text/image, unless the author already
+        // self-tagged it, and only when Gemini is configured.
+        if (! $selfTag
+            && in_array($type, ['text', 'image'], true)
+            && app(GeminiService::class)->enabled()) {
+            DetectSpoilerJob::dispatch($message->id)->afterResponse();
+        }
 
         return response()->json($payload, 201);
     }
@@ -164,6 +185,7 @@ class CommunityMessageController extends Controller
                 ? ['durationSec' => $m->duration_sec, 'url' => $m->audio_url]
                 : null,
             'image'     => $m->type === 'image' ? ['url' => $m->image_url] : null,
+            'isSpoiler' => (bool) $m->is_spoiler,
             'editedAt'  => optional($m->edited_at)->toIso8601String(),
             'createdAt' => $m->created_at->toIso8601String(),
             'mine'      => $m->user_id === $userId,
