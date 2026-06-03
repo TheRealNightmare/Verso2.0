@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { resolveFileUrl } from '../lib/assets';
 
-const BookCard = ({ id, title, author, cover }) => {
+const BookCard = ({ id, title, author, cover, reason }) => {
   return (
     <Link
       to={`/book/${id}`}
@@ -17,6 +17,9 @@ const BookCard = ({ id, title, author, cover }) => {
       )}
       {author && (
         <p className="text-sm font-semibold text-slate-900 truncate">{author}</p>
+      )}
+      {reason && (
+        <p className="mt-0.5 text-xs italic text-[#5b7c99] line-clamp-2" title={reason}>{reason}</p>
       )}
     </Link>
   );

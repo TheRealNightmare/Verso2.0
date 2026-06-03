@@ -89,6 +89,9 @@ const Community = () => {
       channel.listen('.reaction.toggled', (data) => {
         setFeed((prev) => prev.map((m) => (m.id === data.messageId ? { ...m, reactions: data.reactions } : m)));
       });
+      channel.listen('.message.spoiler', (data) => {
+        setFeed((prev) => prev.map((m) => (m.id === data.id ? { ...m, isSpoiler: data.isSpoiler } : m)));
+      });
     } catch (e) {
       console.warn('Echo init failed; falling back to polling.', e);
     }
@@ -97,6 +100,7 @@ const Community = () => {
       try { channel?.stopListening('.message.updated'); } catch {}
       try { channel?.stopListening('.message.deleted'); } catch {}
       try { channel?.stopListening('.reaction.toggled'); } catch {}
+      try { channel?.stopListening('.message.spoiler'); } catch {}
       // Leave only the community channel; the Echo socket is shared app-wide
       // (used by NotificationsContext) and is torn down on logout instead.
       try { getEcho().leave('community'); } catch {}
@@ -107,9 +111,9 @@ const Community = () => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [feed.length]);
 
-  const handleSendText = async (body) => {
+  const handleSendText = async (body, isSpoiler = false) => {
     try {
-      const created = await sendTextMessage(body);
+      const created = await sendTextMessage(body, isSpoiler);
       setFeed((prev) => upsert(prev, created));
     } catch (e) { setError(e?.message || 'Failed to send'); }
   };
@@ -121,9 +125,9 @@ const Community = () => {
     } catch (e) { setError(e?.message || 'Failed to send audio'); }
   };
 
-  const handleSendImage = async (file, caption) => {
+  const handleSendImage = async (file, caption, isSpoiler = false) => {
     try {
-      const created = await sendImageMessage(file, caption);
+      const created = await sendImageMessage(file, caption, isSpoiler);
       setFeed((prev) => upsert(prev, created));
     } catch (e) { setError(e?.message || 'Failed to send image'); }
   };

@@ -12,10 +12,10 @@ export async function listMessages({ before, limit = 50 } = {}) {
   return apiFetch(`/community/messages${qs ? `?${qs}` : ''}`);
 }
 
-export async function sendTextMessage(body) {
+export async function sendTextMessage(body, isSpoiler = false) {
   return apiFetch('/community/messages', {
     method: 'POST',
-    body: JSON.stringify({ type: 'text', body }),
+    body: JSON.stringify({ type: 'text', body, is_spoiler: isSpoiler }),
   });
 }
 
@@ -27,11 +27,12 @@ export async function sendAudioMessage(file, durationSec) {
   return apiFetch('/community/messages', { method: 'POST', body: form });
 }
 
-export async function sendImageMessage(file, caption = '') {
+export async function sendImageMessage(file, caption = '', isSpoiler = false) {
   const form = new FormData();
   form.append('type', 'image');
   form.append('image', file);
   if (caption) form.append('body', caption);
+  if (isSpoiler) form.append('is_spoiler', '1');
   return apiFetch('/community/messages', { method: 'POST', body: form });
 }
 

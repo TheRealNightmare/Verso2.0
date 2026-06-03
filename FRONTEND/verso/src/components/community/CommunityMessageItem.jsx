@@ -19,8 +19,10 @@ const CommunityMessageItem = ({ message, onReact, onEdit, onDelete }) => {
   const [showPicker, setShowPicker] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.body || '');
+  const [revealed, setRevealed] = useState(false);
 
   const mine = !!message.mine;
+  const blurred = !!message.isSpoiler && !revealed && !editing;
   const author = message.author || {};
   const reactions = message.reactions || {};
   const reactionEntries = Object.entries(reactions);
@@ -124,8 +126,19 @@ const CommunityMessageItem = ({ message, onReact, onEdit, onDelete }) => {
             )}
           </div>
 
-          <div className="min-w-0">
-            {renderBody()}
+          <div className="min-w-0 relative">
+            <div className={blurred ? 'blur-md select-none pointer-events-none' : ''}>
+              {renderBody()}
+            </div>
+            {blurred && (
+              <button
+                type="button"
+                onClick={() => setRevealed(true)}
+                className="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/40 text-white text-xs font-medium px-3 text-center hover:bg-slate-900/50"
+              >
+                🚫 Spoiler — click to reveal
+              </button>
+            )}
           </div>
         </div>
 

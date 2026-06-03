@@ -20,6 +20,7 @@ const BookSection = ({ title, books }) => {
             title={book.title}
             author={book.author}
             cover={book.cover}
+            reason={book.reason}
           />
         ))}
       </div>

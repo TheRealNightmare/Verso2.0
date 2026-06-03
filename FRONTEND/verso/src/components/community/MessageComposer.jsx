@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image as ImageIcon, Mic, Send, X, StopCircle } from 'lucide-react';
+import { Image as ImageIcon, Mic, Send, X, StopCircle, EyeOff } from 'lucide-react';
 
 const MessageComposer = ({ onSendText, onSendImage, onSendAudio, placeholder = 'Type your message', replyingTo, onCancelReply }) => {
   const [text, setText] = useState('');
@@ -10,6 +10,7 @@ const MessageComposer = ({ onSendText, onSendImage, onSendAudio, placeholder = '
   const [recordedDuration, setRecordedDuration] = useState(0);
   const [recordElapsed, setRecordElapsed] = useState(0);
   const [sending, setSending] = useState(false);
+  const [markSpoiler, setMarkSpoiler] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -29,6 +30,7 @@ const MessageComposer = ({ onSendText, onSendImage, onSendAudio, placeholder = '
     setRecordedBlob(null);
     setRecordedDuration(0);
     setRecordElapsed(0);
+    setMarkSpoiler(false);
   };
 
   const handleImagePick = (e) => {
@@ -79,11 +81,11 @@ const MessageComposer = ({ onSendText, onSendImage, onSendAudio, placeholder = '
         const file = new File([recordedBlob], 'recording.webm', { type: 'audio/webm' });
         await onSendAudio?.(file, recordedDuration);
       } else if (imageFile) {
-        await onSendImage?.(imageFile, text.trim());
+        await onSendImage?.(imageFile, text.trim(), markSpoiler);
       } else {
         const trimmed = text.trim();
         if (!trimmed) return;
-        await onSendText?.(trimmed);
+        await onSendText?.(trimmed, markSpoiler);
       }
       reset();
     } finally {
@@ -153,6 +155,21 @@ const MessageComposer = ({ onSendText, onSendImage, onSendAudio, placeholder = '
               disabled={!!imageFile || !!recordedBlob}
             >
               <Mic size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setMarkSpoiler((s) => !s)}
+              className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                markSpoiler
+                  ? 'bg-amber-100 text-amber-600 hover:bg-amber-200'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-500'
+              }`}
+              aria-label="Mark as spoiler"
+              aria-pressed={markSpoiler}
+              title={markSpoiler ? 'Spoiler — will be blurred' : 'Mark as spoiler'}
+              disabled={!!recordedBlob}
+            >
+              <EyeOff size={16} />
             </button>
           </>
         )}
