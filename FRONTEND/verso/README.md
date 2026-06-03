@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Verso 2.0 — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React 19 + Vite single-page app for Verso 2.0. It provides the in-browser EPUB/PDF
+readers, the reading dashboard, community chat (via Laravel Echo + Reverb), AI
+recommendations, author tools, and the rest of the UI.
 
-Currently, two official plugins are available:
+This is one half of the project — see the [root README](../../README.md) for the full
+overview and the [backend API](../../BACKEND/verso-api-system).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech stack
 
-## React Compiler
+- **React 19** + **Vite 8** (TypeScript + JSX)
+- **Tailwind CSS 4**
+- **React Router 7**
+- **Recharts** — dashboard charts
+- **epub.js** & **pdf.js** — in-browser readers
+- **Laravel Echo** + **Pusher JS** — realtime (connects to backend Reverb)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Requirements
 
-## Expanding the ESLint configuration
+- Node.js 20+ (verified on Node 24) and npm
+- A running [backend API](../../BACKEND/verso-api-system)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Setup
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Create (or confirm) `.env` in this folder:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```dotenv
+VITE_API_URL=http://localhost:8000/api
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+VITE_REVERB_APP_KEY=your_app_key   # must match backend REVERB_APP_KEY
+VITE_REVERB_HOST=localhost
+VITE_REVERB_PORT=8080
+VITE_REVERB_SCHEME=http
+```
+
+| Variable | Description |
+| --- | --- |
+| `VITE_API_URL` | Base URL of the backend REST API |
+| `VITE_REVERB_APP_KEY` | Reverb app key — must match the backend `REVERB_APP_KEY` |
+| `VITE_REVERB_HOST` | Reverb host (e.g. `localhost`) |
+| `VITE_REVERB_PORT` | Reverb port (default `8080`) |
+| `VITE_REVERB_SCHEME` | `http` for local dev |
+
+## Running
+
+```bash
+npm run dev                  # app → http://localhost:5173
+```
+
+Make sure the backend (`php artisan serve`) and Reverb (`php artisan reverb:start`) are
+running so the API calls and realtime chat work.
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server on port 5173 |
+| `npm run build` | Type-check (`tsc -b`) and build for production |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | Run ESLint |
+
+## Project layout
+
+```
+src/
+├── api/          # API client modules (auth, books, recommendations, …)
+├── pages/        # Route pages (Home, ReadingPage, Community, AuthorDashboard, …)
+├── components/   # Reusable UI components (incl. PeopleRecommendations)
+├── context/      # React context providers
+├── hooks/        # Custom React hooks
+└── lib/          # Shared helpers (e.g. Echo client)
 ```
