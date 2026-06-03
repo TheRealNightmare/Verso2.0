@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PenSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, updateProfile, updateProfilePhoto } from '../api/profile';
-import ProfileForm from '../components/profile/ProfileForm';
-import AvatarPanel from '../components/profile/AvatarPanel';
+import { getUserProfile, getUserFavorites } from '../api/users';
+import { getMyUploadedBooks } from '../api/authorBooks';
+import ProfileView from '../components/profile/ProfileView';
+import EditProfileModal from '../components/profile/EditProfileModal';
 import UploadAvatarModal from '../components/profile/UploadAvatarModal';
 import Spinner from '../components/ui/Spinner';
 import { useToast } from '../context/ToastContext';
@@ -15,6 +18,8 @@ const emptyForm = {
   fullName: '',
   dateOfBirth: '',
   gender: 'Male',
+  bio: '',
+  bannerColor: '',
   currentPassword: '',
   password: '',
 };
@@ -26,40 +31,58 @@ const Profile = () => {
   const confirm = useConfirm();
   usePageTitle('Profile');
 
-  const [profile, setProfile] = useState(emptyForm);
+  const [view, setView] = useState(null); // rich public-shape profile (stats, etc.)
+  const [form, setForm] = useState(emptyForm); // editable fields
+  const [favorites, setFavorites] = useState([]);
+  const [authorBooks, setAuthorBooks] = useState([]);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingExtras, setLoadingExtras] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [editOpen, setEditOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    getProfile()
-      .then((data) => {
-        if (!active) return;
-        setProfile({
-          email: data.email || '',
-          fullName: data.name || '',
-          dateOfBirth: data.dateOfBirth || '',
-          gender: data.gender || 'Male',
-          currentPassword: '',
-          password: '',
-        });
-        setAvatarUrl(data.avatarUrl || '');
-      })
-      .catch(() => {
-        if (active) setLoadError('Could not load your profile. Please try again.');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadingExtras(true);
+    setLoadError('');
+    try {
+      const base = await getProfile();
+      setForm({
+        email: base.email || '',
+        fullName: base.name || '',
+        dateOfBirth: base.dateOfBirth || '',
+        gender: base.gender || 'Male',
+        bio: base.bio || '',
+        bannerColor: base.bannerColor || '',
+        currentPassword: '',
+        password: '',
       });
-    return () => {
-      active = false;
-    };
+      setAvatarUrl(base.avatarUrl || '');
+
+      const profile = await getUserProfile(base.id);
+      setView(profile);
+      setLoading(false);
+
+      const tasks = [getUserFavorites(base.id).then(setFavorites).catch(() => setFavorites([]))];
+      if (profile.role === 'author') {
+        tasks.push(getMyUploadedBooks().then(setAuthorBooks).catch(() => setAuthorBooks([])));
+      }
+      await Promise.all(tasks);
+    } catch {
+      setLoadError('Could not load your profile. Please try again.');
+      setLoading(false);
+    } finally {
+      setLoadingExtras(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleConfirm = async (values) => {
     setSubmitting(true);
@@ -70,6 +93,8 @@ const Profile = () => {
       email: values.email,
       date_of_birth: values.dateOfBirth || null,
       gender: values.gender,
+      bio: values.bio || null,
+      banner_color: values.bannerColor || null,
     };
     if (values.password) {
       payload.current_password = values.currentPassword;
@@ -78,8 +103,12 @@ const Profile = () => {
 
     try {
       const data = await updateProfile(payload);
-      setProfile((p) => ({ ...p, currentPassword: '', password: '' }));
+      setForm((p) => ({ ...p, currentPassword: '', password: '' }));
       updateUser({ name: data.name });
+      setView((v) =>
+        v ? { ...v, name: data.name, bio: data.bio, bannerColor: data.bannerColor } : v
+      );
+      setEditOpen(false);
       toast.success('Updated successfully');
     } catch (err) {
       setErrors(err?.errors || {});
@@ -95,6 +124,7 @@ const Profile = () => {
       const data = await updateProfilePhoto(file);
       setAvatarUrl(data.avatarUrl);
       updateUser({ avatarUrl: data.avatarUrl });
+      setView((v) => (v ? { ...v, avatarUrl: data.avatarUrl } : v));
       setUploadOpen(false);
       toast.success('Photo updated');
     } catch (err) {
@@ -126,26 +156,42 @@ const Profile = () => {
     );
   }
 
-  if (loadError) {
-    return <div className="py-20 text-center text-red-500">{loadError}</div>;
+  if (loadError || !view) {
+    return <div className="py-20 text-center text-red-500">{loadError || 'Profile not found.'}</div>;
   }
 
+  const actions = (
+    <button
+      type="button"
+      onClick={() => setEditOpen(true)}
+      className="inline-flex items-center gap-2 rounded-lg bg-[#5b7c99] px-4 py-2 text-sm text-white hover:bg-[#4a6a85]"
+    >
+      <PenSquare size={16} /> Edit profile
+    </button>
+  );
+
   return (
-    <div className="relative w-full">
-      <div className="flex flex-col lg:flex-row items-center justify-center gap-16 lg:gap-24 py-10">
-        <ProfileForm
-          initialValues={profile}
-          onConfirm={handleConfirm}
-          submitting={submitting}
-          errors={errors}
-        />
-        <AvatarPanel
-          avatarUrl={avatarUrl}
-          name={profile.fullName}
-          onChangePhoto={() => setUploadOpen(true)}
-          onLogout={handleLogout}
-        />
-      </div>
+    <>
+      <ProfileView
+        profile={view}
+        favorites={favorites}
+        authorBooks={authorBooks}
+        actions={actions}
+        loadingExtras={loadingExtras}
+      />
+
+      <EditProfileModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        initialValues={form}
+        onSave={handleConfirm}
+        submitting={submitting}
+        errors={errors}
+        avatarUrl={avatarUrl}
+        name={form.fullName}
+        onChangePhoto={() => setUploadOpen(true)}
+        onLogout={handleLogout}
+      />
 
       <UploadAvatarModal
         open={uploadOpen}
@@ -153,7 +199,7 @@ const Profile = () => {
         onClose={() => setUploadOpen(false)}
         onConfirm={handleUploadConfirm}
       />
-    </div>
+    </>
   );
 };
 

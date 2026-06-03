@@ -26,6 +26,7 @@ class ProfileController extends Controller
             'date_of_birth'    => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'gender'           => ['sometimes', 'nullable', 'string', 'max:32'],
             'bio'              => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'banner_color'     => ['sometimes', 'nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'current_password' => ['required_with:password', 'string'],
             'password'         => ['sometimes', 'string', 'min:8', 'confirmed'],
         ]);
@@ -39,7 +40,7 @@ class ProfileController extends Controller
             $user->password = $validated['password'];
         }
 
-        $user->fill(collect($validated)->only(['name', 'email', 'date_of_birth', 'gender', 'bio'])->all());
+        $user->fill(collect($validated)->only(['name', 'email', 'date_of_birth', 'gender', 'bio', 'banner_color'])->all());
         $user->save();
 
         return response()->json($this->shape($user->fresh()));
@@ -77,6 +78,7 @@ class ProfileController extends Controller
             'dateOfBirth' => $user->date_of_birth?->format('Y-m-d'),
             'gender'      => $user->gender,
             'bio'         => $user->bio,
+            'bannerColor' => $user->banner_color,
             'points'      => $user->points,
         ];
     }

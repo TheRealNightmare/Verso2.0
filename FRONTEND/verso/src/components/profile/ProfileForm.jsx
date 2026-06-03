@@ -6,6 +6,17 @@ import Button from '../ui/Button';
 
 const firstError = (errors, key) => (Array.isArray(errors?.[key]) ? errors[key][0] : errors?.[key]);
 
+const BANNER_PRESETS = [
+  '#5b7c99',
+  '#5b8c6a',
+  '#8c5b8c',
+  '#b5677d',
+  '#475569',
+  '#2c7a7b',
+  '#b07a3c',
+  '#4f5b93',
+];
+
 const ProfileForm = ({ initialValues, onConfirm, submitting = false, errors = {} }) => {
   const [values, setValues] = useState(initialValues);
   const [genderOptions, setGenderOptions] = useState([]);
@@ -22,6 +33,7 @@ const ProfileForm = ({ initialValues, onConfirm, submitting = false, errors = {}
   }, []);
 
   const update = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
+  const setValue = (key, value) => setValues((v) => ({ ...v, [key]: value }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -81,6 +93,57 @@ const ProfileForm = ({ initialValues, onConfirm, submitting = false, errors = {}
             className={inputCls}
           />
         )}
+      </Field>
+
+      <Field label="Bio" error={firstError(errors, 'bio')}>
+        {(fp) => (
+          <textarea
+            {...fp}
+            rows={3}
+            maxLength={1000}
+            value={values.bio}
+            onChange={update('bio')}
+            placeholder="Tell others a little about yourself"
+            className={`${inputCls} resize-none`}
+          />
+        )}
+      </Field>
+
+      <Field label="Banner color" error={firstError(errors, 'banner_color')}>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          {BANNER_PRESETS.map((c) => {
+            const active = (values.bannerColor || '').toLowerCase() === c.toLowerCase();
+            return (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Banner color ${c}`}
+                aria-pressed={active}
+                onClick={() => setValue('bannerColor', c)}
+                className={`h-7 w-7 rounded-full ring-offset-2 transition ${
+                  active ? 'ring-2 ring-slate-700' : 'ring-1 ring-slate-200'
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            );
+          })}
+          <label
+            className="ml-1 inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 px-2.5 text-xs text-slate-600"
+            title="Custom color"
+          >
+            <span
+              className="h-4 w-4 rounded-full ring-1 ring-slate-200"
+              style={{ backgroundColor: values.bannerColor || '#5b7c99' }}
+            />
+            Custom
+            <input
+              type="color"
+              value={/^#[0-9a-fA-F]{6}$/.test(values.bannerColor || '') ? values.bannerColor : '#5b7c99'}
+              onChange={(e) => setValue('bannerColor', e.target.value)}
+              className="sr-only"
+            />
+          </label>
+        </div>
       </Field>
 
       <div className="flex gap-3">
