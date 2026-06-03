@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendshipController;
 use App\Http\Controllers\ReadingSessionController;
+use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\TodoController;
 use App\Http\Controllers\UserController;
@@ -111,6 +112,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Presence heartbeat
     Route::post('/presence/ping', [PresenceController::class, 'ping']);
+
+    // Recommendations (books + people)
+    Route::get('/recommendations/books',  [RecommendationController::class, 'books']);
+    Route::get('/recommendations/people', [RecommendationController::class, 'people']);
 
     // People search + public profiles
     Route::get('/users/search', [UserController::class, 'search']);
