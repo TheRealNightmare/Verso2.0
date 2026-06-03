@@ -16,6 +16,7 @@ use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\MetaController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendshipController;
 use App\Http\Controllers\ReadingSessionController;
@@ -87,6 +88,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
 
+    // Quizzes (AI-generated, per completed book)
+    Route::get ('/quizzes/available',       [QuizController::class, 'available']);
+    Route::post('/quizzes/generate',        [QuizController::class, 'generate']);
+    Route::post('/quizzes/{quiz}/attempt',  [QuizController::class, 'attempt']);
+
     // Todos
     Route::get   ('/todos',      [TodoController::class, 'index']);
     Route::post  ('/todos',      [TodoController::class, 'store']);
@@ -121,6 +127,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}',   [UserController::class, 'show']);
     Route::get('/users/{id}/books', [BookController::class, 'byAuthor']);
+    Route::get('/users/{id}/favorites', [FavoriteController::class, 'forUser']);
 
     // Author-published books
     Route::get   ('/me/books',          [BookController::class, 'myUploads']);
