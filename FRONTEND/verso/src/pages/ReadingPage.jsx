@@ -11,6 +11,7 @@ import {
 } from '../api/annotations';
 import Spinner from '../components/ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
+import useReadingSession from '../hooks/useReadingSession';
 
 const CHARS_PER_PAGE = 1800;
 
@@ -88,6 +89,9 @@ function renderWithHighlights(text, anns, onClickAnn) {
 const ReadingPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+
+  // Track time spent reading this book so the dashboard can report it.
+  useReadingSession({ bookId: Number(id) });
 
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -32,7 +32,8 @@ class ReadingSessionController extends Controller
         $session = ReadingSession::where('user_id', $request->user()->id)->findOrFail($id);
 
         $endedAt = now();
-        $duration = max(0, $endedAt->diffInMinutes(Carbon::parse($session->started_at)));
+        // Carbon 3 diffs are signed: start -> end gives a positive elapsed value.
+        $duration = max(0, (int) round(Carbon::parse($session->started_at)->diffInMinutes($endedAt)));
 
         $session->update([
             'ended_at' => $endedAt,
@@ -43,6 +44,9 @@ class ReadingSessionController extends Controller
         $user = $request->user();
         $user->points = ($user->points ?? 0) + $duration;
         $user->save();
+
+        // Minutes/points just changed — refresh this user's dashboard + leaderboard.
+        DashboardController::forgetUser($user->id);
 
         return response()->json($session);
     }

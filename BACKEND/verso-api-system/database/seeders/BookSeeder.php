@@ -24,7 +24,7 @@ class BookSeeder extends Seeder
         $books = [];
         $page  = 1;
 
-        while (count($books) < 30) {
+        while (count($books) < 50) {
             $response = Http::timeout(60)->retry(3, 2000)->get('https://gutendex.com/books/', [
                 'languages' => 'en',
                 'mime_type' => 'text/plain',
@@ -43,10 +43,10 @@ class BookSeeder extends Seeder
             $page++;
         }
 
-        $books = array_slice($books, 0, 30);
+        $books = array_slice($books, 0, 50);
 
         foreach ($books as $index => $data) {
-            $this->command->info("Seeding book " . ($index + 1) . "/30: " . ($data['title'] ?? 'Unknown'));
+            $this->command->info("Seeding book " . ($index + 1) . "/50: " . ($data['title'] ?? 'Unknown'));
 
             $author      = $data['authors'][0]['name'] ?? 'Unknown Author';
             $coverUrl    = $data['formats']['image/jpeg'] ?? null;
