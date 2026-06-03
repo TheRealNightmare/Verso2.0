@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Quiz extends Model
 {
-    protected $fillable = ['book_id', 'title', 'max_score'];
+    protected $fillable = ['book_id', 'title', 'questions', 'max_score'];
+
+    protected $casts = [
+        'questions' => 'array',
+    ];
 
     public function book()
     {

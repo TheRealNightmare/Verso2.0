@@ -7,7 +7,7 @@ import ReviewComponent from '../components/ReviewComponent';
 import CommentComponent from '../components/CommentComponent';
 import ReviewForm from '../components/ReviewForm';
 import Spinner from '../components/ui/Spinner';
-import { fetchBook } from '../api/books';
+import { fetchBook, refreshBook } from '../api/books';
 import { useAuth } from '../context/AuthContext';
 import { resolveFileUrl } from '../lib/assets';
 import usePageTitle from '../hooks/usePageTitle';
@@ -40,7 +40,7 @@ const BookDetails = () => {
   }, [id]);
 
   const refresh = () => {
-    fetchBook(id)
+    refreshBook(id)
       .then(setBook)
       .catch(() => {});
   };

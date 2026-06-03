@@ -1,7 +1,11 @@
 import { apiFetch } from './auth';
+import { cachedFetch, invalidate } from '../lib/cache';
+
+const HISTORY_KEY = 'history:me';
+const HISTORY_TTL = 60 * 1000; // 1 minute
 
 export function fetchHistory() {
-  return apiFetch('/history');
+  return cachedFetch(HISTORY_KEY, () => apiFetch('/history'), { ttl: HISTORY_TTL });
 }
 
 export async function fetchHistoryEntry({ bookId = null, uploadId = null } = {}) {
@@ -22,9 +26,15 @@ export function saveHistory({ bookId = null, uploadId = null, progress, currentP
   return apiFetch('/history', {
     method: 'POST',
     body: JSON.stringify(body),
+  }).then((data) => {
+    invalidate(HISTORY_KEY);
+    return data;
   });
 }
 
 export function deleteHistory(id) {
-  return apiFetch(`/history/${id}`, { method: 'DELETE' });
+  return apiFetch(`/history/${id}`, { method: 'DELETE' }).then((data) => {
+    invalidate(HISTORY_KEY);
+    return data;
+  });
 }

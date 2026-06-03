@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -9,6 +10,11 @@ use Throwable;
 
 class GeminiService
 {
+    // Spoiler verdicts depend only on the content, so identical text/images are
+    // classified once and reused for a month (only confident true/false results
+    // are cached — transient API failures are not).
+    private const SPOILER_CACHE_DAYS = 30;
+
     /**
      * Whether a Gemini API key is configured. When false, every feature that
      * relies on this service degrades gracefully (no spoiler detection, no
@@ -32,12 +38,23 @@ class GeminiService
             return false;
         }
 
+        $cacheKey = 'spoiler:text:'.hash('sha256', $text);
+        $cached = Cache::get($cacheKey);
+        if (! is_null($cached)) {
+            return $cached;
+        }
+
         $prompt = $this->spoilerInstruction()
             ."\n\nMessage:\n\"\"\"\n".$text."\n\"\"\"";
 
         $json = $this->generate([['text' => $prompt]]);
+        $result = $this->interpretSpoiler($json);
 
-        return $this->interpretSpoiler($json);
+        if (! is_null($result)) {
+            Cache::put($cacheKey, $result, now()->addDays(self::SPOILER_CACHE_DAYS));
+        }
+
+        return $result;
     }
 
     /**
@@ -60,11 +77,18 @@ class GeminiService
             if (! $mime) {
                 return false;
             }
-            $data = base64_encode($disk->get($relativePath));
+            $raw = $disk->get($relativePath);
+            $data = base64_encode($raw);
         } catch (Throwable $e) {
             Log::warning('Gemini image read failed', ['error' => $e->getMessage()]);
 
             return null;
+        }
+
+        $cacheKey = 'spoiler:image:'.hash('sha256', $raw);
+        $cached = Cache::get($cacheKey);
+        if (! is_null($cached)) {
+            return $cached;
         }
 
         $prompt = $this->spoilerInstruction()
@@ -74,8 +98,13 @@ class GeminiService
             ['text' => $prompt],
             ['inline_data' => ['mime_type' => $mime, 'data' => $data]],
         ]);
+        $result = $this->interpretSpoiler($json);
 
-        return $this->interpretSpoiler($json);
+        if (! is_null($result)) {
+            Cache::put($cacheKey, $result, now()->addDays(self::SPOILER_CACHE_DAYS));
+        }
+
+        return $result;
     }
 
     /**
@@ -135,6 +164,64 @@ class GeminiService
             'items'             => $items,
             'extra_suggestions' => is_array($decoded['extra_suggestions'] ?? null) ? $decoded['extra_suggestions'] : [],
         ];
+    }
+
+    /**
+     * Ask Gemini to build a 5-question multiple-choice comprehension quiz for a book.
+     *
+     * @param  string  $sourceText  book text (chapters) or, when text is thin, metadata
+     * @return array|null  list of ['question','options'=>[4 strings],'answer'=>0-3] or null on failure
+     */
+    public function generateBookQuiz(string $title, ?string $author, string $sourceText): ?array
+    {
+        $sourceText = trim($sourceText);
+        if ($sourceText === '') {
+            return null;
+        }
+
+        // Keep the payload modest so the request stays within limits.
+        $sourceText = mb_substr($sourceText, 0, 12000);
+
+        $prompt = "You are a quiz author for a book-reading app.\n"
+            ."Create EXACTLY 5 multiple-choice questions that test comprehension of the book below.\n"
+            ."Each question must have EXACTLY 4 options and exactly one correct option.\n"
+            ."Make questions answerable from the provided text; avoid trivia outside it.\n"
+            .'Respond ONLY with JSON of the shape: {"questions":[{"question":"...","options":["a","b","c","d"],"answer":0}]} '
+            ."where \"answer\" is the 0-based index of the correct option.\n\n"
+            .'BOOK: '.$title.($author ? ' by '.$author : '')."\n"
+            ."TEXT:\n\"\"\"\n".$sourceText."\n\"\"\"";
+
+        $json = $this->generate([['text' => $prompt]], ['temperature' => 0.4]);
+        $decoded = $this->decodeJson($json);
+
+        if (! is_array($decoded) || ! isset($decoded['questions']) || ! is_array($decoded['questions'])) {
+            return null;
+        }
+
+        $questions = [];
+        foreach ($decoded['questions'] as $q) {
+            if (! is_array($q) || ! isset($q['question'], $q['options'], $q['answer'])) {
+                continue;
+            }
+            $options = array_values(array_filter(
+                is_array($q['options']) ? $q['options'] : [],
+                fn ($o) => is_string($o) && trim($o) !== ''
+            ));
+            $answer = (int) $q['answer'];
+            if (count($options) !== 4 || $answer < 0 || $answer > 3) {
+                continue;
+            }
+            $questions[] = [
+                'question' => (string) $q['question'],
+                'options'  => array_map(fn ($o) => (string) $o, $options),
+                'answer'   => $answer,
+            ];
+            if (count($questions) === 5) {
+                break;
+            }
+        }
+
+        return count($questions) === 5 ? $questions : null;
     }
 
     private function spoilerInstruction(): string

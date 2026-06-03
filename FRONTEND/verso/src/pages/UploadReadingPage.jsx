@@ -13,6 +13,7 @@ import {
 } from '../api/annotations';
 import Spinner from '../components/ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
+import useReadingSession from '../hooks/useReadingSession';
 import AnnotationToolbar from '../components/reader/AnnotationToolbar';
 import AnnotationSidebar from '../components/reader/AnnotationSidebar';
 import NoteEditorModal from '../components/reader/NoteEditorModal';
@@ -35,6 +36,10 @@ const UploadReadingPage = () => {
 
   const [upload, setUpload] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Track time spent reading this upload so the dashboard can report it.
+  useReadingSession({ uploadId: upload?.id ?? null });
+
   const [error, setError] = useState(null);
   const [needsReupload, setNeedsReupload] = useState(false);
   usePageTitle(upload?.title || 'Reading');

@@ -308,49 +308,83 @@ class RecommendationService
         }
 
         $candidateIds = $sharedFavCounts->keys()->merge($genreUserIds)->unique()->values();
-        if ($candidateIds->isEmpty()) {
-            return [];
+
+        // Taste-based matches (may be empty for a brand-new reader — that's fine,
+        // we still promote authors below).
+        $people = collect();
+        if ($candidateIds->isNotEmpty()) {
+            $candidates = User::whereIn('id', $candidateIds)->limit(200)->get();
+
+            $scored = $candidates->map(function (User $other) use ($sharedFavCounts, $myGenres) {
+                $mutualFav = (int) ($sharedFavCounts[$other->id] ?? 0);
+
+                // Genres this candidate engages with, intersected with ours.
+                $otherBookIds = ReadingHistory::where('user_id', $other->id)
+                    ->whereNotNull('book_id')
+                    ->pluck('book_id')
+                    ->merge(Favorite::where('user_id', $other->id)->pluck('book_id'))
+                    ->unique();
+                $otherGenres = Book::whereIn('id', $otherBookIds)
+                    ->whereNotNull('genre')
+                    ->pluck('genre')
+                    ->unique();
+                $sharedGenres = $otherGenres->intersect($myGenres)->values();
+
+                $score = ($mutualFav * 3) + ($sharedGenres->count() * 2);
+
+                return [
+                    'user'         => $other,
+                    'score'        => $score,
+                    'sharedGenres' => $sharedGenres->all(),
+                    'mutualFav'    => $mutualFav,
+                ];
+            })
+                ->filter(fn ($row) => $row['score'] > 0)
+                ->sortByDesc('score')
+                ->take($limit)
+                ->values();
+
+            $people = $scored->map(fn ($row) => [
+                'id'              => $row['user']->id,
+                'name'            => $row['user']->name,
+                'avatarUrl'       => $row['user']->avatar_url,
+                'role'            => $row['user']->role,
+                'sharedGenres'    => $row['sharedGenres'],
+                'mutualFavorites' => $row['mutualFav'],
+                'friendStatus'    => $user->friendStatusWith($row['user']->id),
+                'promoted'        => false,
+            ]);
         }
 
-        $candidates = User::whereIn('id', $candidateIds)->limit(200)->get();
+        // Promote the newest authors so they get exposure (works even with no taste signal).
+        $authorPeople = $this->promotedAuthors($user, $excludedUserIds, $people->pluck('id'));
 
-        $scored = $candidates->map(function (User $other) use ($sharedFavCounts, $myGenres) {
-            $mutualFav = (int) ($sharedFavCounts[$other->id] ?? 0);
+        return $people->concat($authorPeople)->all();
+    }
 
-            // Genres this candidate engages with, intersected with ours.
-            $otherBookIds = ReadingHistory::where('user_id', $other->id)
-                ->whereNotNull('book_id')
-                ->pluck('book_id')
-                ->merge(Favorite::where('user_id', $other->id)->pluck('book_id'))
-                ->unique();
-            $otherGenres = Book::whereIn('id', $otherBookIds)
-                ->whereNotNull('genre')
-                ->pluck('genre')
-                ->unique();
-            $sharedGenres = $otherGenres->intersect($myGenres)->values();
+    /**
+     * Newest author accounts, surfaced to give them exposure. Excludes self,
+     * existing relationships, and anyone already in the taste-based list.
+     */
+    private function promotedAuthors(User $user, $excludedUserIds, $alreadyShownIds, int $limit = 3): \Illuminate\Support\Collection
+    {
+        $authors = User::where('role', 'author')
+            ->whereNotIn('id', $excludedUserIds->all())
+            ->whereNotIn('id', $alreadyShownIds->all())
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
 
-            $score = ($mutualFav * 3) + ($sharedGenres->count() * 2);
-
-            return [
-                'user'         => $other,
-                'score'        => $score,
-                'sharedGenres' => $sharedGenres->all(),
-                'mutualFav'    => $mutualFav,
-            ];
-        })
-            ->filter(fn ($row) => $row['score'] > 0)
-            ->sortByDesc('score')
-            ->take($limit)
-            ->values();
-
-        return $scored->map(fn ($row) => [
-            'id'             => $row['user']->id,
-            'name'           => $row['user']->name,
-            'avatarUrl'      => $row['user']->avatar_url,
-            'role'           => $row['user']->role,
-            'sharedGenres'   => $row['sharedGenres'],
-            'mutualFavorites' => $row['mutualFav'],
-            'friendStatus'   => $user->friendStatusWith($row['user']->id),
-        ])->all();
+        return $authors->map(fn (User $a) => [
+            'id'              => $a->id,
+            'name'            => $a->name,
+            'avatarUrl'       => $a->avatar_url,
+            'role'            => $a->role ?: 'author',
+            'sharedGenres'    => [],
+            'mutualFavorites' => 0,
+            'friendStatus'    => $user->friendStatusWith($a->id),
+            'promoted'        => true,
+            'tag'             => 'New author',
+        ])->values();
     }
 }

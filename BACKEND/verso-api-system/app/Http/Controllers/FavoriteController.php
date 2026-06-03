@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Favorite;
+use App\Models\User;
 use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,21 @@ class FavoriteController extends Controller
     {
         $favorites = Favorite::with('book')
             ->where('user_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($favorites->pluck('book'));
+    }
+
+    /**
+     * Public list of a given user's favorited books, for their profile page.
+     */
+    public function forUser(int $id): JsonResponse
+    {
+        User::findOrFail($id); // 404 for unknown users
+
+        $favorites = Favorite::with('book')
+            ->where('user_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
 

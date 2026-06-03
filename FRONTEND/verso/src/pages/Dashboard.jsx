@@ -1,34 +1,39 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Eye, Clock, BookOpen, Award } from 'lucide-react';
+import { Eye, BookOpen, Award } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/dashboard/StatCard';
 import HoursSpentChart from '../components/dashboard/HoursSpentChart';
 import PerformanceGauge from '../components/dashboard/PerformanceGauge';
 import WormProgress from '../components/dashboard/WormProgress';
+import QuizzesCard from '../components/dashboard/QuizzesCard';
 import LeaderBoard from '../components/dashboard/LeaderBoard';
 import ProfileCard from '../components/dashboard/ProfileCard';
 import MiniCalendar from '../components/dashboard/MiniCalendar';
 import TodoList from '../components/dashboard/TodoList';
 import Spinner from '../components/ui/Spinner';
-import { getDashboardSummary } from '../api/dashboard';
+import { getDashboardSummary, dashboardKey } from '../api/dashboard';
+import { readCache, invalidatePrefix } from '../lib/cache';
 import usePageTitle from '../hooks/usePageTitle';
 
 const Dashboard = () => {
   const { user } = useAuth();
   usePageTitle('Dashboard');
-  const [summary, setSummary] = useState(null);
+  const [summary, setSummary] = useState(() => readCache(dashboardKey('monthly'))?.data ?? null);
   const [range, setRange] = useState('monthly');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !readCache(dashboardKey('monthly')));
   const [error, setError] = useState(null);
 
   const fetchSummary = useCallback(async (r) => {
-    setLoading(true);
+    // Show a cached copy of this range immediately (no spinner) and revalidate.
+    const cached = readCache(dashboardKey(r))?.data ?? null;
+    setSummary(cached);
+    setLoading(!cached);
     setError(null);
     try {
       const data = await getDashboardSummary({ range: r });
       setSummary(data);
     } catch (err) {
-      setError(err?.message || 'Failed to load dashboard.');
+      if (!cached) setError(err?.message || 'Failed to load dashboard.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +79,7 @@ const Dashboard = () => {
     );
   }
 
-  const stats = summary?.stats ?? { totalBooks: 0, completed: 0, quizScore: 0, lessons: 0 };
+  const stats = summary?.stats ?? { reading: 0, completed: 0, quizScore: 0 };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -88,11 +93,10 @@ const Dashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Total Book" value={stats.totalBooks} icon={Eye} onAction={handleStatAction} />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard label="Reading Now" value={stats.reading} icon={Eye} onAction={handleStatAction} />
           <StatCard label="Completed" value={stats.completed} icon={BookOpen} onAction={handleStatAction} />
           <StatCard label="Quiz Score" value={stats.quizScore} icon={Award} onAction={handleStatAction} />
-          <StatCard label="Lesson" value={stats.lessons} icon={Clock} onAction={handleStatAction} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -112,6 +116,8 @@ const Dashboard = () => {
           value={summary?.worm?.value ?? 0}
           max={summary?.worm?.max ?? 100}
         />
+
+        <QuizzesCard onQuizCompleted={() => { invalidatePrefix('dashboard:'); fetchSummary(range); }} />
 
         <LeaderBoard rows={summary?.leaderboard ?? []} />
       </section>

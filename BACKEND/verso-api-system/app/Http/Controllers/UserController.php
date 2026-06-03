@@ -93,6 +93,7 @@ class UserController extends Controller
             'avatarUrl'           => $user->avatar_url,
             'role'                => $user->role,
             'bio'                 => $user->bio,
+            'bannerColor'         => $user->banner_color,
             'points'              => $user->points,
             'online'              => $this->isOnline($user),
             'lastSeenAt'          => optional($user->last_seen_at)->toIso8601String(),

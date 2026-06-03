@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import Avatar from '../ui/Avatar';
 
 const LeaderBoard = ({ rows = [] }) => {
   const handleRowClick = (row) => {
@@ -14,7 +15,7 @@ const LeaderBoard = ({ rows = [] }) => {
             <tr className="text-[10px] uppercase tracking-wider text-slate-400">
               <th className="text-left py-2 font-medium">Rank</th>
               <th className="text-left py-2 font-medium">Name</th>
-              <th className="text-left py-2 font-medium">Course</th>
+              <th className="text-left py-2 font-medium">Quizzes</th>
               <th className="text-left py-2 font-medium">Hour</th>
               <th className="text-left py-2 font-medium">Point</th>
             </tr>
@@ -45,10 +46,11 @@ const LeaderBoard = ({ rows = [] }) => {
                   </td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={row.avatar}
-                        alt={row.name}
-                        className="w-7 h-7 rounded-full object-cover"
+                      <Avatar
+                        src={row.avatarUrl}
+                        name={row.name}
+                        className="w-7 h-7"
+                        textClass="text-[10px]"
                       />
                       <span className="text-slate-700">{row.name}</span>
                     </div>

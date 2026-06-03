@@ -6,37 +6,53 @@ use App\Models\Book;
 use App\Models\Favorite;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class BookController extends Controller
 {
     public function home(): JsonResponse
     {
-        $latest = Book::orderBy('created_at', 'desc')->limit(10)->get();
+        // Cached for 5 minutes. The per-user bookmark/favorite flags are hidden
+        // below (the home shelves never use them), so the payload is identical
+        // for every user and safe to share under a single cache key.
+        $payload = Cache::remember('books.home', 300, function () {
+            $hidden = ['is_bookmarked', 'is_favorited'];
 
-        $recommended = Book::orderBy('average_rating', 'desc')->limit(10)->get();
+            $latest = Book::orderBy('created_at', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-        $exclusive = Book::where('is_exclusive', true)->orderBy('average_rating', 'desc')->limit(10)->get();
+            $recommended = Book::orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-        $highlyRated = Book::has('reviews', '>=', 3)
-            ->orderBy('average_rating', 'desc')
-            ->limit(10)
-            ->get();
+            $exclusive = Book::where('is_exclusive', true)->orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-        $topFavoriteBookIds = Favorite::selectRaw('book_id, count(*) as fav_count')
-            ->groupBy('book_id')
-            ->orderByDesc('fav_count')
-            ->limit(10)
-            ->pluck('book_id');
+            $highlyRated = Book::has('reviews', '>=', 3)
+                ->orderBy('average_rating', 'desc')
+                ->limit(10)
+                ->get()
+                ->makeHidden($hidden);
 
-        $favorites = Book::whereIn('id', $topFavoriteBookIds)->get();
+            $topFavoriteBookIds = Favorite::selectRaw('book_id, count(*) as fav_count')
+                ->groupBy('book_id')
+                ->orderByDesc('fav_count')
+                ->limit(10)
+                ->pluck('book_id');
 
-        return response()->json([
-            'latest'      => $latest,
-            'recommended' => $recommended,
-            'exclusive'   => $exclusive,
-            'highly_rated' => $highlyRated,
-            'favorites'   => $favorites,
-        ]);
+            $favorites = Book::whereIn('id', $topFavoriteBookIds)->get()->makeHidden($hidden);
+
+            // Return plain arrays (not Eloquent collections) so the cached
+            // payload serializes cleanly under the database cache driver. Cached
+            // collection objects come back as __PHP_Incomplete_Class on a cache
+            // hit and json_encode to "{}" instead of "[]". makeHidden() above is
+            // respected by toArray().
+            return [
+                'latest'      => $latest->toArray(),
+                'recommended' => $recommended->toArray(),
+                'exclusive'   => $exclusive->toArray(),
+                'highly_rated' => $highlyRated->toArray(),
+                'favorites'   => $favorites->toArray(),
+            ];
+        });
+
+        return response()->json($payload);
     }
 
     public function index(Request $request): JsonResponse

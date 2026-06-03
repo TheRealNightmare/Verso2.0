@@ -6,6 +6,7 @@ use App\Events\FriendRequestAccepted;
 use App\Events\FriendRequestReceived;
 use App\Models\Friendship;
 use App\Models\User;
+use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -83,6 +84,9 @@ class FriendshipController extends Controller
             'status'       => 'pending',
         ]);
 
+        // A pending row now excludes each user from the other's people suggestions.
+        $this->forgetPeopleRecs($me->id, $otherId);
+
         broadcast(new FriendRequestReceived($otherId, [
             'requestId' => $friendship->id,
             'from'      => $this->userSummary($me),
@@ -121,7 +125,11 @@ class FriendshipController extends Controller
             abort(403, 'This request is not addressed to you.');
         }
 
+        $requesterId = $friendship->requester_id;
         $friendship->delete();
+
+        // Removing the row makes each user eligible in the other's suggestions again.
+        $this->forgetPeopleRecs($me->id, $requesterId);
 
         return response()->json(['status' => 'none']);
     }
@@ -134,6 +142,9 @@ class FriendshipController extends Controller
 
         if ($friendship) {
             $friendship->delete();
+
+            // Removing the row makes each user eligible in the other's suggestions again.
+            $this->forgetPeopleRecs($me->id, $userId);
         }
 
         return response()->json(['status' => 'none']);
@@ -143,11 +154,21 @@ class FriendshipController extends Controller
     {
         $friendship->update(['status' => 'accepted']);
 
+        // Now friends — drop each user from the other's people suggestions cache.
+        $this->forgetPeopleRecs($friendship->requester_id, $friendship->addressee_id);
+
         broadcast(new FriendRequestAccepted($friendship->requester_id, [
             'by' => $this->userSummary($me),
         ]))->toOthers();
 
         return response()->json(['status' => 'friends']);
+    }
+
+    /** Invalidate the cached people recommendations for both sides of a friendship change. */
+    private function forgetPeopleRecs(int $userIdA, int $userIdB): void
+    {
+        RecommendationService::forget($userIdA);
+        RecommendationService::forget($userIdB);
     }
 
     private function userSummary(User $u): array

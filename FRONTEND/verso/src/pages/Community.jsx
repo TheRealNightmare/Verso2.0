@@ -20,8 +20,10 @@ import { useToast } from '../context/ToastContext';
 import { useConfirm } from '../context/ConfirmContext';
 import usePageTitle from '../hooks/usePageTitle';
 
-const INFO_POLL_MS = 8000;
-const FEED_POLL_MS = 5000;
+// Info has no realtime channel, so refresh it on a calm interval. The feed is
+// kept live by Echo; we only poll it as a fallback while the socket is down.
+const INFO_POLL_MS = 60000;
+const FEED_FALLBACK_POLL_MS = 15000;
 const PRESENCE_PING_MS = 30000;
 
 const upsert = (list, msg) => (list.some((m) => m.id === msg.id) ? list : [...list, msg]);
@@ -40,6 +42,8 @@ const Community = () => {
   // sees the latest value without re-subscribing to Echo.
   const userIdRef = useRef(user?.id);
   useEffect(() => { userIdRef.current = user?.id; }, [user]);
+  // True while the Echo socket is connected; gates the feed polling fallback.
+  const realtimeRef = useRef(false);
 
   const refreshInfo = useCallback(async () => {
     try { setInfo(await getCommunityInfo()); } catch (e) { /* non-fatal */ }
@@ -57,7 +61,10 @@ const Community = () => {
     refreshInfo();
     refreshFeed();
     const i = setInterval(refreshInfo, INFO_POLL_MS);
-    const f = setInterval(refreshFeed, FEED_POLL_MS);
+    // Feed updates arrive over Echo; only poll when realtime is unavailable.
+    const f = setInterval(() => {
+      if (!realtimeRef.current) refreshFeed();
+    }, FEED_FALLBACK_POLL_MS);
     return () => { clearInterval(i); clearInterval(f); };
   }, [refreshInfo, refreshFeed]);
 
@@ -70,8 +77,23 @@ const Community = () => {
   // Realtime via Echo
   useEffect(() => {
     let channel;
+    let conn;
+    let onState;
     try {
       const echo = getEcho();
+      // Track socket connection state so the polling fallback only kicks in when
+      // realtime is actually down. On reconnect, refetch once to catch up on any
+      // messages missed while disconnected.
+      conn = echo.connector?.pusher?.connection;
+      if (conn) {
+        onState = () => {
+          const wasDown = !realtimeRef.current;
+          realtimeRef.current = conn.state === 'connected';
+          if (realtimeRef.current && wasDown) refreshFeed();
+        };
+        onState();
+        conn.bind('state_change', onState);
+      }
       channel = echo.private('community');
       channel.listen('.message.sent', (data) => {
         if (data.parentId) return; // flat group chat — ignore thread replies
@@ -96,6 +118,8 @@ const Community = () => {
       console.warn('Echo init failed; falling back to polling.', e);
     }
     return () => {
+      realtimeRef.current = false;
+      try { if (conn && onState) conn.unbind('state_change', onState); } catch {}
       try { channel?.stopListening('.message.sent'); } catch {}
       try { channel?.stopListening('.message.updated'); } catch {}
       try { channel?.stopListening('.message.deleted'); } catch {}
