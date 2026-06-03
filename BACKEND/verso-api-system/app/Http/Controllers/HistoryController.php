@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ReadingHistory;
 use App\Models\UserUpload;
+use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +57,11 @@ class HistoryController extends Controller
         }
 
         $history = ReadingHistory::updateOrCreate($key, $values);
+
+        // Reading a platform book changes the user's taste profile.
+        if (! empty($validated['book_id'])) {
+            RecommendationService::forget($request->user()->id);
+        }
 
         return response()->json($history, 200);
     }
