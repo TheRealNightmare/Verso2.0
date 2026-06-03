@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ReadingHistory extends Model
 {
+    use HasFactory;
+
     protected $fillable = ['user_id', 'book_id', 'user_upload_id', 'progress', 'current_page', 'last_read_at'];
 
     protected $casts = [
