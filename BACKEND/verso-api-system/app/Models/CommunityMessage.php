@@ -14,10 +14,13 @@ class CommunityMessage extends Model
     protected $fillable = [
         'user_id', 'parent_id', 'type', 'body',
         'audio_path', 'duration_sec', 'image_path', 'edited_at',
+        'is_spoiler', 'spoiler_source', 'spoiler_checked_at',
     ];
 
     protected $casts = [
-        'edited_at' => 'datetime',
+        'edited_at'          => 'datetime',
+        'is_spoiler'         => 'boolean',
+        'spoiler_checked_at' => 'datetime',
     ];
 
     public function user()
