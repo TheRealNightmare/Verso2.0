@@ -42,4 +42,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * An author account (can publish books).
+     */
+    public function author(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'author',
+        ]);
+    }
 }
