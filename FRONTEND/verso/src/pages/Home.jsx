@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import BookSection from '../components/BookSection';
+import PeopleRecommendations from '../components/PeopleRecommendations';
 import Spinner from '../components/ui/Spinner';
 import { fetchHomeBooks } from '../api/books';
+import { fetchRecommendedBooks, fetchRecommendedPeople } from '../api/recommendations';
 import usePageTitle from '../hooks/usePageTitle';
 
 function Home() {
@@ -15,6 +17,26 @@ function Home() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recBooks, setRecBooks] = useState([]);
+  const [recPeople, setRecPeople] = useState([]);
+  const [recColdStart, setRecColdStart] = useState(false);
+
+  // Recommendations are lazy-loaded separately so the main feed renders
+  // instantly even when the AI re-rank step is slow on a cold cache.
+  useEffect(() => {
+    let cancelled = false;
+    fetchRecommendedBooks()
+      .then((data) => {
+        if (cancelled) return;
+        setRecBooks(data.books ?? []);
+        setRecColdStart(!!data.coldStart);
+      })
+      .catch(() => { /* non-fatal: just hide the section */ });
+    fetchRecommendedPeople()
+      .then((data) => { if (!cancelled) setRecPeople(data.people ?? []); })
+      .catch(() => { /* non-fatal */ });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +67,7 @@ function Home() {
       title: b.title,
       author: b.author,
       cover: b.cover_image_url,
+      reason: b.reason,
     }));
 
   return (
@@ -54,6 +77,13 @@ function Home() {
           {error}
         </div>
       )}
+      {recBooks.length > 0 && (
+        <BookSection
+          title={recColdStart ? 'Popular right now' : 'Recommended for you'}
+          books={toCards(recBooks)}
+        />
+      )}
+      <PeopleRecommendations people={recPeople} />
       {loading ? (
         <div className="px-2 py-6 text-sm text-gray-500">
           <Spinner label="Loading books…" />

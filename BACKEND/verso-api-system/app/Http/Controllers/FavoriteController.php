@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Favorite;
+use App\Services\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,6 +28,8 @@ class FavoriteController extends Controller
         $existing = Favorite::where('user_id', $request->user()->id)
             ->where('book_id', $validated['book_id'])
             ->first();
+
+        RecommendationService::forget($request->user()->id);
 
         if ($existing) {
             $existing->delete();
