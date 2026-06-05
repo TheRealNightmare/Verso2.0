@@ -59,6 +59,21 @@ export function invalidate(key) {
   }
 }
 
+// Wipe the entire cache — both layers and in-flight requests. Call on logout/login
+// to prevent one user's data from leaking into another user's session.
+export function clearAllCache() {
+  mem.clear();
+  inFlight.clear();
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(PREFIX)) localStorage.removeItem(k);
+    }
+  } catch {
+    /* non-fatal */
+  }
+}
+
 // Drop every key starting with `prefix` (e.g. 'profile:' or 'dashboard:').
 export function invalidatePrefix(prefix) {
   for (const key of [...mem.keys()]) {

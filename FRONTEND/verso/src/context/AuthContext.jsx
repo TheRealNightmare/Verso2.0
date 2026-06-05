@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { loginUser, registerUser, logoutUser } from '../api/auth';
 import { getProfile } from '../api/profile';
 import { disconnectEcho } from '../lib/echo';
+import { clearAllCache } from '../lib/cache';
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,7 @@ export function AuthProvider({ children }) {
 
   async function login(credentials) {
     const data = await loginUser(credentials);
+    clearAllCache();
     localStorage.setItem('auth_token', data.token);
     localStorage.setItem('auth_user', JSON.stringify(data.user));
     setToken(data.token);
@@ -63,6 +65,7 @@ export function AuthProvider({ children }) {
     } catch (_) {
       // proceed with local logout even if server call fails
     }
+    clearAllCache();
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     disconnectEcho();
