@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3, Trash2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, BookMarked, Edit3, Trash2, X, Settings2 } from 'lucide-react';
 import { fetchBookContent } from '../api/content';
 import { saveHistory, fetchHistoryEntry } from '../api/history';
 import {
@@ -12,11 +12,15 @@ import {
 import Spinner from '../components/ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
 import useReadingSession from '../hooks/useReadingSession';
+import ReaderSettingsPanel from '../components/reader/ReaderSettingsPanel';
+import AnnotationToolbar from '../components/reader/AnnotationToolbar';
+import GeminiAskPanel from '../components/reader/GeminiAskPanel';
+import { getTextOffset, renderWithHighlights } from '../components/reader/textHighlight';
+import { DEFAULT_HIGHLIGHT_COLOR as DEFAULT_COLOR } from '../components/reader/annotationColors';
+import { useReaderSettings, SINGLE_COLUMN_SCALE } from '../context/ReaderSettingsContext';
+import { getThemeColors } from '../components/reader/readerThemes';
 
 const CHARS_PER_PAGE = 1800;
-
-const HIGHLIGHT_COLORS = ['#fde68a', '#bbf7d0', '#bfdbfe', '#fbcfe8'];
-const DEFAULT_COLOR = HIGHLIGHT_COLORS[0];
 
 function chaptersToPages(chapters) {
   const pages = [];
@@ -43,49 +47,6 @@ function chaptersToPages(chapters) {
   return pages;
 }
 
-// Character offset of a selection boundary within an element's text content.
-// Robust even when the element already contains <mark> elements (multiple text nodes).
-function getTextOffset(rootEl, node, offsetInNode) {
-  if (!rootEl || !node) return 0;
-  const range = document.createRange();
-  range.selectNodeContents(rootEl);
-  try {
-    range.setEnd(node, offsetInNode);
-  } catch {
-    return 0;
-  }
-  return range.toString().length;
-}
-
-// Split a column's text into plain strings + <mark> spans for its annotations.
-function renderWithHighlights(text, anns, onClickAnn) {
-  if (!anns.length) return text;
-  const sorted = [...anns].sort((a, b) => a.start_offset - b.start_offset);
-  const out = [];
-  let cursor = 0;
-  sorted.forEach((a) => {
-    const s = Math.max(cursor, a.start_offset);
-    const e = Math.min(text.length, a.end_offset);
-    if (s > cursor) out.push(text.slice(cursor, s));
-    if (e > s) {
-      out.push(
-        <mark
-          key={a.id}
-          onClick={() => onClickAnn(a)}
-          title={a.note || 'Click to add a note'}
-          className="cursor-pointer rounded-sm"
-          style={{ backgroundColor: a.color || DEFAULT_COLOR, color: 'inherit' }}
-        >
-          {text.slice(s, e)}
-        </mark>,
-      );
-      cursor = e;
-    }
-  });
-  if (cursor < text.length) out.push(text.slice(cursor));
-  return out;
-}
-
 const ReadingPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -101,11 +62,18 @@ const ReadingPage = () => {
   const [isAnnotationsOpen, setIsAnnotationsOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [chromeVisible, setChromeVisible] = useState(true); // mobile: toggle header/footer
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Reader appearance settings (font size, background theme).
+  const { fontScale, theme, bgColor, textColor } = useReaderSettings();
+  const { bg, text } = getThemeColors({ theme, bgColor, textColor });
+  const singleColumn = fontScale >= SINGLE_COLUMN_SCALE;
 
   const [annotations, setAnnotations] = useState([]);
   const [selectionInfo, setSelectionInfo] = useState(null); // { column, start, end, text, rect }
   const [editingAnn, setEditingAnn] = useState(null);        // annotation being noted/edited
   const [noteDraft, setNoteDraft] = useState('');
+  const [geminiText, setGeminiText] = useState(null);        // highlighted text being asked about
 
   const leftRef = useRef(null);
   const rightRef = useRef(null);
@@ -314,7 +282,7 @@ const ReadingPage = () => {
   const rightAnns = annotations.filter((a) => a.page_index === currentPage && a.column === 'right');
 
   const TopIcons = ({ onAnnotations }) => (
-    <div className="flex items-center gap-4 text-[#2c3e50]">
+    <div className="flex items-center gap-4 text-current">
       <button
         onClick={onAnnotations}
         className={`p-1 rounded transition-colors ${
@@ -335,23 +303,35 @@ const ReadingPage = () => {
           stroke={bookmarked ? '#5b7c99' : 'currentColor'}
         />
       </button>
+      <button
+        onClick={() => setIsSettingsOpen((o) => !o)}
+        className={`p-1 rounded transition-colors ${
+          isSettingsOpen ? 'text-[#5b7c99]' : 'hover:text-[#5b7c99]'
+        }`}
+        aria-label="Reading settings"
+      >
+        <Settings2 size={22} />
+      </button>
     </div>
   );
 
   return (
-    <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
+    <div
+      className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6"
+      style={{ backgroundColor: bg, color: text }}
+    >
       <div className="flex-1 flex flex-col min-w-0">
-        <header className={`${chromeVisible ? 'grid' : 'hidden'} lg:grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5 bg-[#f8f6f2]`}>
+        <header className={`${chromeVisible ? 'grid' : 'hidden'} lg:grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5`}>
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-1 text-sm text-[#2c3e50] hover:text-[#5b7c99] justify-self-start"
+            className="inline-flex items-center gap-1 text-sm text-current hover:text-[#5b7c99] justify-self-start"
           >
             <ChevronLeft size={18} /> <span className="hidden sm:inline">Back</span>
           </button>
 
           <div className="text-center min-w-0 px-2">
-            <h2 className="text-sm sm:text-lg font-semibold text-[#2c3e50] truncate">Chapter {page.chapter}</h2>
-            <h3 className="hidden sm:block text-lg font-semibold text-[#2c3e50] truncate">{page.chapterTitle}</h3>
+            <h2 className="text-sm sm:text-lg font-semibold text-current truncate">Chapter {page.chapter}</h2>
+            <h3 className="hidden sm:block text-lg font-semibold text-current truncate">{page.chapterTitle}</h3>
           </div>
 
           <div className="justify-self-end">
@@ -359,11 +339,11 @@ const ReadingPage = () => {
           </div>
         </header>
 
-        <main className="relative flex-1 flex items-center px-2 sm:px-8 lg:px-12 py-3 sm:py-6 overflow-hidden bg-[#f8f6f2]">
+        <main className="relative flex-1 flex items-center px-2 sm:px-8 lg:px-12 py-3 sm:py-6 overflow-hidden">
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 0}
-            className="hidden lg:block absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="hidden lg:block absolute left-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Previous page"
           >
             <ChevronLeft size={32} strokeWidth={1.5} />
@@ -373,12 +353,13 @@ const ReadingPage = () => {
             key={currentPage}
             onMouseUp={handleMouseUp}
             onClick={handleReaderTap}
-            className="flex-1 max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 h-full overflow-y-auto px-2 sm:px-4 animate-page-turn"
+            className={`flex-1 ${singleColumn ? 'max-w-2xl' : 'max-w-4xl'} mx-auto grid grid-cols-1 ${singleColumn ? '' : 'lg:grid-cols-2'} gap-6 lg:gap-12 h-full overflow-y-auto px-2 sm:px-4 animate-page-turn`}
           >
             <div>
               <p
                 ref={leftRef}
-                className="whitespace-pre-line text-justify text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80"
+                className="whitespace-pre-line text-justify text-current"
+                style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}
               >
                 {renderWithHighlights(page.left, leftAnns, openEditor)}
               </p>
@@ -386,7 +367,8 @@ const ReadingPage = () => {
             <div>
               <p
                 ref={rightRef}
-                className="whitespace-pre-line text-justify text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80"
+                className="whitespace-pre-line text-justify text-current"
+                style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}
               >
                 {renderWithHighlights(page.right, rightAnns, openEditor)}
               </p>
@@ -396,44 +378,29 @@ const ReadingPage = () => {
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= pages.length - 1}
-            className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Next page"
           >
             <ChevronRight size={32} strokeWidth={1.5} />
           </button>
 
-          {selectionInfo && (
-            <div
-              className="fixed z-50 flex items-center gap-1 rounded-lg bg-white px-2 py-1.5 shadow-lg ring-1 ring-black/10"
-              style={{
-                top: Math.max(8, selectionInfo.rect.top - 46),
-                left: Math.max(8, Math.min(selectionInfo.rect.left, window.innerWidth - 220)),
-              }}
-            >
-              {HIGHLIGHT_COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => createHighlight(c)}
-                  className="h-5 w-5 rounded-full ring-1 ring-black/10 hover:scale-110 transition-transform"
-                  style={{ backgroundColor: c }}
-                  aria-label={`Highlight ${c}`}
-                />
-              ))}
-              <button
-                onClick={() => createHighlight(DEFAULT_COLOR, true)}
-                className="ml-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-[#2c3e50] hover:bg-[#f0ece3]"
-              >
-                <Edit3 size={13} /> Note
-              </button>
-            </div>
-          )}
+          <AnnotationToolbar
+            rect={selectionInfo?.rect}
+            onColor={(c) => createHighlight(c)}
+            onNote={(c) => createHighlight(c, true)}
+            onAskGemini={() => {
+              setGeminiText(selectionInfo.text);
+              window.getSelection()?.removeAllRanges();
+              setSelectionInfo(null);
+            }}
+          />
         </main>
 
-        <footer className={`${chromeVisible ? 'flex' : 'hidden'} lg:flex items-center justify-center gap-6 py-3 sm:py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]`}>
+        <footer className={`${chromeVisible ? 'flex' : 'hidden'} lg:flex items-center justify-center gap-6 py-3 sm:py-4 text-sm font-semibold text-current`}>
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage <= 0}
-            className="lg:hidden p-1 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="lg:hidden p-1 text-current hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Previous page"
           >
             <ChevronLeft size={24} strokeWidth={1.5} />
@@ -442,13 +409,23 @@ const ReadingPage = () => {
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage >= pages.length - 1}
-            className="lg:hidden p-1 text-[#2c3e50] hover:text-[#5b7c99] disabled:opacity-30"
+            className="lg:hidden p-1 text-current hover:text-[#5b7c99] disabled:opacity-30"
             aria-label="Next page"
           >
             <ChevronRight size={24} strokeWidth={1.5} />
           </button>
         </footer>
       </div>
+
+      <ReaderSettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+
+      <GeminiAskPanel
+        isOpen={!!geminiText}
+        selectedText={geminiText}
+        bookTitle={page.chapterTitle}
+        onClose={() => setGeminiText(null)}
+      />
+
 
       {isAnnotationsOpen && (
         <>

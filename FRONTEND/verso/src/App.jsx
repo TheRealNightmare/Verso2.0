@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { NotificationsProvider } from './context/NotificationsContext';
+import { ReaderSettingsProvider } from './context/ReaderSettingsContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -86,7 +87,9 @@ function App() {
       <ToastProvider>
         <ConfirmProvider>
           <NotificationsProvider>
-            <AppContent />
+            <ReaderSettingsProvider>
+              <AppContent />
+            </ReaderSettingsProvider>
           </NotificationsProvider>
         </ConfirmProvider>
       </ToastProvider>

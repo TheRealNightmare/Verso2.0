@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "fetch:audio": "bash scripts/fetch-asmr.sh"
   },
   "dependencies": {
     "epubjs": "^0.3.93",
