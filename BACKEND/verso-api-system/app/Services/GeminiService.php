@@ -224,6 +224,45 @@ class GeminiService
         return count($questions) === 5 ? $questions : null;
     }
 
+    /**
+     * Answer a reader's free-text question about a highlighted passage.
+     *
+     * Used by the in-reader "Ask Gemini" panel: the selected text is the primary
+     * context and the reader supplies the question.
+     *
+     * @return string|null  the answer in plain prose, or null when the API call
+     *                      failed or the service is disabled.
+     */
+    public function answerAboutPassage(string $passage, string $question, ?string $bookTitle = null): ?string
+    {
+        $passage  = trim($passage);
+        $question = trim($question);
+        if ($passage === '' || $question === '') {
+            return null;
+        }
+
+        // Keep the payload modest so the request stays within limits.
+        $passage = mb_substr($passage, 0, 6000);
+
+        $prompt = "You are a reading assistant inside a book-reading app.\n"
+            ."A reader highlighted a passage and asked a question about it.\n"
+            ."Answer the question concisely and clearly in plain prose, using the highlighted passage as the primary context.\n"
+            ."If the question cannot be answered from the passage, use your general knowledge but stay focused on what was asked.\n\n"
+            .($bookTitle ? 'BOOK: '.$bookTitle."\n" : '')
+            ."HIGHLIGHTED PASSAGE:\n\"\"\"\n".$passage."\n\"\"\"\n\n"
+            ."QUESTION:\n".$question;
+
+        $json = $this->generate([['text' => $prompt]], ['responseMimeType' => 'text/plain']);
+
+        $text = data_get($json, 'candidates.0.content.parts.0.text');
+        if (! is_string($text)) {
+            return null;
+        }
+        $text = trim($text);
+
+        return $text === '' ? null : $text;
+    }
+
     private function spoilerInstruction(): string
     {
         return 'You are a spoiler detector for a book-reading community chat. '

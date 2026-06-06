@@ -1,15 +1,15 @@
 import React from 'react';
-import { Edit3 } from 'lucide-react';
+import { Edit3, Sparkles } from 'lucide-react';
 import { HIGHLIGHT_COLORS, DEFAULT_HIGHLIGHT_COLOR } from './annotationColors';
 
-const AnnotationToolbar = ({ rect, onColor, onNote }) => {
+const AnnotationToolbar = ({ rect, onColor, onNote, onAskGemini }) => {
   if (!rect) return null;
   return (
     <div
       className="fixed z-50 flex items-center gap-1 rounded-lg bg-white px-2 py-1.5 shadow-lg ring-1 ring-black/10"
       style={{
         top: Math.max(8, rect.top - 46),
-        left: Math.max(8, Math.min(rect.left, window.innerWidth - 220)),
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - 280)),
       }}
     >
       {HIGHLIGHT_COLORS.map((c) => (
@@ -27,6 +27,14 @@ const AnnotationToolbar = ({ rect, onColor, onNote }) => {
       >
         <Edit3 size={13} /> Note
       </button>
+      {onAskGemini && (
+        <button
+          onClick={onAskGemini}
+          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-[#5b7c99] hover:bg-[#f0ece3]"
+        >
+          <Sparkles size={13} /> Ask Gemini
+        </button>
+      )}
     </div>
   );
 };

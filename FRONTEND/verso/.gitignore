@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Bundled ambient (ASMR) audio — fetched via `npm run fetch:audio`, not committed
+public/audio/*.mp3
+scripts/.ffmpeg-static/

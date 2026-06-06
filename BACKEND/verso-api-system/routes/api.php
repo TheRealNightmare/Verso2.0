@@ -17,6 +17,8 @@ use App\Http\Controllers\MetaController;
 use App\Http\Controllers\PresenceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\ReaderAssistantController;
+use App\Http\Controllers\ReaderPreferenceController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendshipController;
 use App\Http\Controllers\ReadingSessionController;
@@ -103,6 +105,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get  ('/profile',       [ProfileController::class, 'show']);
     Route::patch('/profile',       [ProfileController::class, 'update']);
     Route::post ('/profile/photo', [ProfileController::class, 'updatePhoto']);
+
+    // Reader assistant (ask Gemini about a highlighted passage)
+    Route::post('/reader/ask-gemini', [ReaderAssistantController::class, 'ask'])
+        ->middleware('throttle:30,1');
+
+    // Reader preferences (font size, background theme, ASMR audio)
+    Route::get  ('/reading-preferences', [ReaderPreferenceController::class, 'show']);
+    Route::patch('/reading-preferences', [ReaderPreferenceController::class, 'update']);
 
     // Reading sessions
     Route::post ('/reading-sessions',      [ReadingSessionController::class, 'store']);

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, NotebookText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, NotebookText, Settings2 } from 'lucide-react';
 import 'pdfjs-dist/web/pdf_viewer.css';
 import { fetchUploads } from '../api/uploads';
 import { getFile, putFile, sha256Hex } from '../lib/uploadStore';
@@ -17,7 +17,12 @@ import useReadingSession from '../hooks/useReadingSession';
 import AnnotationToolbar from '../components/reader/AnnotationToolbar';
 import AnnotationSidebar from '../components/reader/AnnotationSidebar';
 import NoteEditorModal from '../components/reader/NoteEditorModal';
+import ReaderSettingsPanel from '../components/reader/ReaderSettingsPanel';
+import GeminiAskPanel from '../components/reader/GeminiAskPanel';
+import { getTextOffset, renderWithHighlights } from '../components/reader/textHighlight';
 import { DEFAULT_HIGHLIGHT_COLOR } from '../components/reader/annotationColors';
+import { useReaderSettings } from '../context/ReaderSettingsContext';
+import { getThemeColors } from '../components/reader/readerThemes';
 
 const CHARS_PER_PAGE = 1800;
 
@@ -46,6 +51,7 @@ const UploadReadingPage = () => {
 
   const [textPages, setTextPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const txtTextRef = useRef(null);
 
   const [epubRendition, setEpubRendition] = useState(null);
   const [epubLoc, setEpubLoc] = useState({ current: 1, total: 1 });
@@ -73,6 +79,12 @@ const UploadReadingPage = () => {
   const [editingAnn, setEditingAnn] = useState(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [geminiText, setGeminiText] = useState(null); // highlighted text being asked about
+
+  // Reader appearance + ambient audio settings (font size, theme, ASMR).
+  const { fontScale, theme, bgColor, textColor } = useReaderSettings();
+  const { bg, text } = getThemeColors({ theme, bgColor, textColor });
 
   useEffect(() => {
     let cancelled = false;
@@ -321,6 +333,18 @@ const UploadReadingPage = () => {
     }
   }, [epubRendition, annotations]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Apply font size + theme colours to the EPUB rendition.
+  useEffect(() => {
+    if (!epubRendition) return;
+    try {
+      epubRendition.themes.fontSize(`${Math.round(fontScale * 100)}%`);
+      epubRendition.themes.override('color', text);
+      epubRendition.themes.override('background', bg);
+    } catch (err) {
+      console.warn('Failed to apply EPUB theme', err);
+    }
+  }, [epubRendition, fontScale, bg, text]);
+
   // ---------------- PDF ----------------
 
   useEffect(() => {
@@ -330,7 +354,7 @@ const UploadReadingPage = () => {
       const pdfjs = pdfjsModuleRef.current;
       const page = await pdfDoc.getPage(currentPage + 1);
       if (cancelled) return;
-      const viewport = page.getViewport({ scale: 1.4 });
+      const viewport = page.getViewport({ scale: 1.4 * fontScale });
       const canvas = pdfCanvasRef.current;
       const ctx = canvas.getContext('2d');
       canvas.width = viewport.width;
@@ -370,7 +394,7 @@ const UploadReadingPage = () => {
       queueProgress(upload?.id, progress, currentPage);
     })().catch(console.error);
     return () => { cancelled = true; };
-  }, [pdfDoc, currentPage, upload?.id]);
+  }, [pdfDoc, currentPage, upload?.id, fontScale]);
 
   // PDF text-selection handler
   const handlePdfMouseUp = useCallback(() => {
@@ -418,6 +442,39 @@ const UploadReadingPage = () => {
       source: 'pdf',
     });
   }, [currentPage]);
+
+  // TXT text-selection handler (offset-based, single column, per page)
+  const handleTxtMouseUp = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) {
+      setSelectionInfo(null);
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const rootEl = txtTextRef.current;
+    if (!rootEl || !rootEl.contains(range.commonAncestorContainer)) {
+      setSelectionInfo(null);
+      return;
+    }
+    let start = getTextOffset(rootEl, range.startContainer, range.startOffset);
+    let end = getTextOffset(rootEl, range.endContainer, range.endOffset);
+    if (start > end) [start, end] = [end, start];
+    const fullText = (textPages && textPages[currentPage]) || '';
+    const text = fullText.slice(start, end).trim();
+    if (!text || end <= start) {
+      setSelectionInfo(null);
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    setSelectionInfo({
+      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+      payload: {
+        selected_text: text,
+        location: { type: 'txt', page: currentPage, start, end },
+      },
+      source: 'txt',
+    });
+  };
 
   // ---------------- Save / edit / delete ----------------
 
@@ -488,6 +545,8 @@ const UploadReadingPage = () => {
       setCurrentPage(Math.max(0, Math.min(pdfDoc.numPages - 1, loc.page - 1)));
     } else if (loc.type === 'epub' && epubRendition && loc.cfiRange) {
       try { epubRendition.display(loc.cfiRange); } catch { /* ignore */ }
+    } else if (loc.type === 'txt' && textPages) {
+      setCurrentPage(Math.max(0, Math.min(textPages.length - 1, loc.page)));
     }
     setIsSidebarOpen(false);
   };
@@ -495,6 +554,7 @@ const UploadReadingPage = () => {
   const locationLabel = (ann) => {
     if (ann.location?.type === 'pdf') return `Page ${ann.location.page}`;
     if (ann.location?.type === 'epub') return 'EPUB';
+    if (ann.location?.type === 'txt') return `Page ${ann.location.page + 1}`;
     return '';
   };
 
@@ -577,34 +637,42 @@ const UploadReadingPage = () => {
     );
   }
 
-  const supportsAnnotations = upload?.format === 'pdf' || upload?.format === 'epub';
+  const supportsAnnotations =
+    upload?.format === 'pdf' || upload?.format === 'epub' || upload?.format === 'txt';
 
   const renderHeader = (centerLabel, footerLabel) => (
     <>
-      <header className="grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5 bg-[#f8f6f2]">
+      <header className="grid grid-cols-3 items-center px-4 sm:px-8 py-3 sm:py-5">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-sm text-[#2c3e50] hover:text-[#5b7c99] justify-self-start"
+          className="inline-flex items-center gap-1 text-sm text-current hover:text-[#5b7c99] justify-self-start"
         >
           <ChevronLeft size={18} /> <span className="hidden sm:inline">Back</span>
         </button>
         <div className="text-center min-w-0 px-2">
-          <h2 className="text-sm sm:text-lg font-semibold text-[#2c3e50] truncate">{upload?.title}</h2>
-          <h3 className="text-[10px] sm:text-xs uppercase tracking-wider text-[#2c3e50]/60">{centerLabel}</h3>
+          <h2 className="text-sm sm:text-lg font-semibold text-current truncate">{upload?.title}</h2>
+          <h3 className="text-[10px] sm:text-xs uppercase tracking-wider text-current opacity-60">{centerLabel}</h3>
         </div>
-        <div className="justify-self-end">
+        <div className="justify-self-end flex items-center gap-3">
           {supportsAnnotations && (
             <button
               onClick={() => setIsSidebarOpen((o) => !o)}
-              className={`inline-flex items-center gap-1 text-sm ${isSidebarOpen ? 'text-[#5b7c99]' : 'text-[#2c3e50] hover:text-[#5b7c99]'}`}
+              className={`inline-flex items-center gap-1 text-sm ${isSidebarOpen ? 'text-[#5b7c99]' : 'text-current hover:text-[#5b7c99]'}`}
               aria-label="Toggle annotations"
             >
               <NotebookText size={20} />
             </button>
           )}
+          <button
+            onClick={() => setIsSettingsOpen((o) => !o)}
+            className={`inline-flex items-center gap-1 text-sm ${isSettingsOpen ? 'text-[#5b7c99]' : 'text-current hover:text-[#5b7c99]'}`}
+            aria-label="Reading settings"
+          >
+            <Settings2 size={20} />
+          </button>
         </div>
       </header>
-      <footer className="flex items-center justify-center py-3 sm:py-4 text-sm font-semibold text-[#2c3e50] bg-[#f8f6f2]">
+      <footer className="flex items-center justify-center py-3 sm:py-4 text-sm font-semibold text-current">
         {footerLabel}
       </footer>
     </>
@@ -616,6 +684,11 @@ const UploadReadingPage = () => {
         rect={selectionInfo?.rect}
         onColor={(c) => createHighlight(c)}
         onNote={(c) => createHighlight(c, true)}
+        onAskGemini={() => {
+          setGeminiText(selectionInfo.payload.selected_text);
+          try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+          setSelectionInfo(null);
+        }}
       />
       <AnnotationSidebar
         isOpen={isSidebarOpen}
@@ -634,48 +707,72 @@ const UploadReadingPage = () => {
         onDelete={removeAnnotation}
         onClose={() => setEditingAnn(null)}
       />
+      <ReaderSettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <GeminiAskPanel
+        isOpen={!!geminiText}
+        selectedText={geminiText}
+        bookTitle={upload?.title}
+        onClose={() => setGeminiText(null)}
+      />
     </>
   );
 
   if (upload?.format === 'txt' && textPages) {
     const pageText = textPages[currentPage] || '';
+    const txtAnns = annotations.filter(
+      (a) => a.location?.type === 'txt' && a.location.page === currentPage
+    );
     return (
-      <div className="flex flex-col h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
-        {renderHeader(`Plain text (${upload.format})`, `${currentPage + 1}/${textPages.length}`)}
-        <main className="relative flex-1 flex items-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-hidden">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-            disabled={currentPage <= 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
-          >
-            <ChevronLeft size={32} strokeWidth={1.5} />
-          </button>
-          <div className="flex-1 h-full overflow-y-auto px-2 sm:px-4">
-            <p className="whitespace-pre-line text-[15px] leading-7 sm:text-[13px] sm:leading-relaxed text-[#2c3e50]/80">
-              {pageText}
-            </p>
-          </div>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(textPages.length - 1, p + 1))}
-            disabled={currentPage >= textPages.length - 1}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
-          >
-            <ChevronRight size={32} strokeWidth={1.5} />
-          </button>
-        </main>
+      <div
+        className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6"
+        style={{ backgroundColor: bg, color: text }}
+      >
+        <div className="flex flex-col flex-1 min-w-0">
+          {renderHeader(`Plain text (${upload.format})`, `${currentPage + 1}/${textPages.length}`)}
+          <main className="relative flex-1 flex items-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-hidden">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+              disabled={currentPage <= 0}
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10 disabled:opacity-30"
+            >
+              <ChevronLeft size={32} strokeWidth={1.5} />
+            </button>
+            <div className="flex-1 h-full overflow-y-auto px-2 sm:px-4">
+              <p
+                ref={txtTextRef}
+                onMouseUp={handleTxtMouseUp}
+                className="whitespace-pre-line text-current"
+                style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}
+              >
+                {renderWithHighlights(pageText, txtAnns, openEditor)}
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(textPages.length - 1, p + 1))}
+              disabled={currentPage >= textPages.length - 1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10 disabled:opacity-30"
+            >
+              <ChevronRight size={32} strokeWidth={1.5} />
+            </button>
+          </main>
+        </div>
+        {annotationChrome}
       </div>
     );
   }
 
   if (upload?.format === 'epub') {
     return (
-      <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
+      <div
+        className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6"
+        style={{ backgroundColor: bg, color: text }}
+      >
         <div className="flex flex-col flex-1 min-w-0">
           {renderHeader('EPUB', `${epubLoc.current}/${epubLoc.total}`)}
           <main className="relative flex-1 flex items-stretch justify-center px-3 sm:px-8 lg:px-12 py-4 sm:py-6 overflow-hidden">
             <button
               onClick={() => epubRendition?.prev()}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10"
             >
               <ChevronLeft size={32} strokeWidth={1.5} />
             </button>
@@ -684,7 +781,7 @@ const UploadReadingPage = () => {
             </div>
             <button
               onClick={() => epubRendition?.next()}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10"
             >
               <ChevronRight size={32} strokeWidth={1.5} />
             </button>
@@ -700,14 +797,17 @@ const UploadReadingPage = () => {
       (a) => a.location?.type === 'pdf' && a.location.page === currentPage + 1
     );
     return (
-      <div className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6 bg-[#f8f6f2]">
+      <div
+        className="flex h-[calc(100vh-1.5rem)] sm:h-[calc(100vh-2rem)] lg:h-[calc(100vh-3rem)] -m-3 sm:-m-4 lg:-m-6"
+        style={{ backgroundColor: bg, color: text }}
+      >
         <div className="flex flex-col flex-1 min-w-0">
           {renderHeader('PDF', `${currentPage + 1}/${pdfDoc.numPages}`)}
           <main className="relative flex-1 flex items-center justify-center px-3 sm:px-12 lg:px-16 py-4 sm:py-6 overflow-auto">
             <button
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage <= 0}
-              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
+              className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10 disabled:opacity-30"
             >
               <ChevronLeft size={32} strokeWidth={1.5} />
             </button>
@@ -749,7 +849,7 @@ const UploadReadingPage = () => {
             <button
               onClick={() => setCurrentPage((p) => Math.min(pdfDoc.numPages - 1, p + 1))}
               disabled={currentPage >= pdfDoc.numPages - 1}
-              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#2c3e50] hover:text-[#5b7c99] bg-[#f8f6f2]/80 rounded-full z-10 disabled:opacity-30"
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-current hover:text-[#5b7c99] bg-black/5 rounded-full z-10 disabled:opacity-30"
             >
               <ChevronRight size={32} strokeWidth={1.5} />
             </button>

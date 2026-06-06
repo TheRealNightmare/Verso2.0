@@ -33,6 +33,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function readerPreference()
+    {
+        return $this->hasOne(ReaderPreference::class);
+    }
+
     public function sentFriendships()
     {
         return $this->hasMany(Friendship::class, 'requester_id');
