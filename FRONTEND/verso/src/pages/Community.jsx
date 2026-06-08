@@ -3,6 +3,7 @@ import { Info, X } from 'lucide-react';
 import CommunityInfoCard from '../components/community/CommunityInfoCard';
 import CommunityMessageItem from '../components/community/CommunityMessageItem';
 import MessageComposer from '../components/community/MessageComposer';
+import CommunityRoomsTab from '../components/community/CommunityRoomsTab';
 import {
   getCommunityInfo,
   listMessages,
@@ -37,6 +38,7 @@ const Community = () => {
   const [feed, setFeed] = useState([]);
   const [error, setError] = useState(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [view, setView] = useState('feed'); // 'feed' | 'rooms'
   const feedEndRef = useRef(null);
   // Hold the current user id in a ref so the realtime effect (deps []) always
   // sees the latest value without re-subscribing to Echo.
@@ -189,7 +191,25 @@ const Community = () => {
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-9rem)] sm:h-[calc(100vh-10rem)] bg-white rounded-xl overflow-hidden shadow-sm">
+    <div>
+      <div className="mb-3 flex gap-2 border-b border-slate-200">
+        {[['feed', 'Feed'], ['rooms', 'Rooms']].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={`px-4 py-2 text-sm font-medium ${
+              view === key ? 'border-b-2 border-[#5b7c99] text-[#5b7c99]' : 'text-slate-500 hover:text-[#5b7c99]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'rooms' ? (
+        <CommunityRoomsTab />
+      ) : (
+    <div className="relative flex h-[calc(100vh-12rem)] sm:h-[calc(100vh-13rem)] bg-white rounded-xl overflow-hidden shadow-sm">
       {/* Mobile backdrop for the info drawer */}
       {infoOpen && (
         <div
@@ -261,6 +281,8 @@ const Community = () => {
           </div>
         )}
       </section>
+    </div>
+      )}
     </div>
   );
 };

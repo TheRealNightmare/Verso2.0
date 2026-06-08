@@ -19,6 +19,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ReaderAssistantController;
 use App\Http\Controllers\ReaderPreferenceController;
+use App\Http\Controllers\ReadingRoomController;
+use App\Http\Controllers\RoomAnnotationController;
+use App\Http\Controllers\RoomAnnotationCommentController;
+use App\Http\Controllers\RoomMessageController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\FriendshipController;
 use App\Http\Controllers\ReadingSessionController;
@@ -128,6 +132,37 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Presence heartbeat
     Route::post('/presence/ping', [PresenceController::class, 'ping']);
+
+    // Collaborative reading rooms
+    Route::get   ('/reading-rooms',                 [ReadingRoomController::class, 'index']);
+    Route::post  ('/reading-rooms',                 [ReadingRoomController::class, 'store']);
+    Route::post  ('/reading-rooms/join',            [ReadingRoomController::class, 'joinByCode']);
+    Route::get   ('/reading-rooms/{room}',          [ReadingRoomController::class, 'show']);
+    Route::patch ('/reading-rooms/{room}',          [ReadingRoomController::class, 'update']);
+    Route::delete('/reading-rooms/{room}',          [ReadingRoomController::class, 'destroy']);
+    Route::post  ('/reading-rooms/{room}/join',     [ReadingRoomController::class, 'join']);
+    Route::post  ('/reading-rooms/{room}/leave',    [ReadingRoomController::class, 'leave']);
+    Route::post  ('/reading-rooms/{room}/invite',   [ReadingRoomController::class, 'invite']);
+    Route::delete('/reading-rooms/{room}/members/{userId}', [ReadingRoomController::class, 'removeMember']);
+    Route::post  ('/reading-rooms/{room}/progress', [ReadingRoomController::class, 'updateProgress']);
+
+    // Room shared highlights
+    Route::get   ('/reading-rooms/{room}/highlights', [RoomAnnotationController::class, 'index']);
+    Route::post  ('/reading-rooms/{room}/highlights', [RoomAnnotationController::class, 'store']);
+    Route::patch ('/room-highlights/{id}',            [RoomAnnotationController::class, 'update']);
+    Route::delete('/room-highlights/{id}',            [RoomAnnotationController::class, 'destroy']);
+
+    // Room highlight comments (threaded discussion on a highlight)
+    Route::get   ('/room-highlights/{id}/comments', [RoomAnnotationCommentController::class, 'index']);
+    Route::post  ('/room-highlights/{id}/comments', [RoomAnnotationCommentController::class, 'store']);
+    Route::delete('/room-comments/{id}',            [RoomAnnotationCommentController::class, 'destroy']);
+
+    // Room chat (mirrors community chat, scoped to a room)
+    Route::get   ('/reading-rooms/{room}/messages',                  [RoomMessageController::class, 'index']);
+    Route::post  ('/reading-rooms/{room}/messages',                  [RoomMessageController::class, 'store']);
+    Route::patch ('/reading-rooms/{room}/messages/{id}',             [RoomMessageController::class, 'update']);
+    Route::delete('/reading-rooms/{room}/messages/{id}',             [RoomMessageController::class, 'destroy']);
+    Route::post  ('/reading-rooms/{room}/messages/{id}/reactions',   [RoomMessageController::class, 'toggleReaction']);
 
     // Recommendations (books + people)
     Route::get('/recommendations/books',  [RecommendationController::class, 'books']);

@@ -86,6 +86,13 @@ export function NotificationsProvider({ children }) {
       }
     });
 
+    channel.listen('.room.invite', (payload) => {
+      const who = payload.from?.name || 'A friend';
+      const room = payload.name || 'a reading room';
+      const code = payload.joinCode ? ` (code: ${payload.joinCode})` : '';
+      toast.show(`${who} invited you to “${room}”${code} — open Reading Rooms to join`);
+    });
+
     return () => {
       echo.leave(`user.${user.id}`);
     };
