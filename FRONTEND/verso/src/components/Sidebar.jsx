@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Home, History, Bookmark, Grid, Calendar, Users, MessageSquare, X, Upload, Library } from 'lucide-react';
+import { BookOpen, Home, History, Bookmark, Grid, Calendar, Users, MessageSquare, X, Upload, Library, BookUser } from 'lucide-react';
 import { useNotifications } from '../context/NotificationsContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,6 +11,7 @@ const baseNavItems = [
   { to: '/dashboard', icon: Grid, label: 'Dashboard', match: (p) => p === '/dashboard' },
   { to: '/events', icon: Calendar, label: 'Events', match: (p) => p.startsWith('/events') || p === '/create-event' },
   { to: '/community', icon: Users, label: 'Community', match: (p) => p === '/community' },
+  { to: '/rooms', icon: BookUser, label: 'Reading Rooms', match: (p) => p.startsWith('/rooms') },
   { to: '/messages', icon: MessageSquare, label: 'Messages', match: (p) => p.startsWith('/messages'), badge: 'unread' },
 ];
 

@@ -22,6 +22,7 @@ import Profile from './pages/Profile';
 import Event from './pages/Event';
 import EventCreate from './pages/EventCreate';
 import Community from './pages/Community';
+import ReadingRooms from './pages/ReadingRooms';
 import UserProfile from './pages/UserProfile';
 import Messages from './pages/Messages';
 import AuthorPublishPage from './pages/AuthorPublishPage';
@@ -30,7 +31,9 @@ import AuthorDashboard from './pages/AuthorDashboard';
 function AppContent() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const isReadingMode = location.pathname.startsWith('/read') || location.pathname.startsWith('/reading');
+  const isReadingMode = location.pathname.startsWith('/read')
+    || location.pathname.startsWith('/reading')
+    || /^\/rooms\/[^/]+\/read/.test(location.pathname);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const appRoutes = (
@@ -41,6 +44,8 @@ function AppContent() {
       <Route path="/events" element={<ProtectedRoute><Event /></ProtectedRoute>} />
       <Route path="/create-event" element={<ProtectedRoute><EventCreate /></ProtectedRoute>} />
       <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+      <Route path="/rooms" element={<ProtectedRoute><ReadingRooms /></ProtectedRoute>} />
+      <Route path="/rooms/:roomId/read" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
       <Route path="/users/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
       <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/messages/:userId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
