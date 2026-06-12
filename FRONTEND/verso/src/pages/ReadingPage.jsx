@@ -15,7 +15,6 @@ import {
   createRoomHighlight,
   deleteRoomHighlight,
   updateProgress,
-  inviteFriend,
   listHighlightComments,
   addHighlightComment,
   deleteComment,
@@ -27,14 +26,15 @@ import {
   deleteRoomMessage,
   toggleRoomReaction,
 } from '../api/readingRooms';
-import { listFriends } from '../api/friends';
 import Spinner from '../components/ui/Spinner';
 import usePageTitle from '../hooks/usePageTitle';
 import useReadingSession from '../hooks/useReadingSession';
 import ReaderSettingsPanel from '../components/reader/ReaderSettingsPanel';
+import useNarrator from '../components/reader/narrator/useNarrator';
 import AnnotationToolbar from '../components/reader/AnnotationToolbar';
 import GeminiAskPanel from '../components/reader/GeminiAskPanel';
 import RoomMembersPanel from '../components/room/RoomMembersPanel';
+import InviteFriendsModal from '../components/room/InviteFriendsModal';
 import RoomChatPanel from '../components/room/RoomChatPanel';
 import HighlightThread from '../components/room/HighlightThread';
 import { getTextOffset, renderWithHighlights } from '../components/reader/textHighlight';
@@ -113,8 +113,11 @@ const ReadingPage = () => {
   const [chromeVisible, setChromeVisible] = useState(true); // mobile: toggle header/footer
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // Reader appearance settings (font size, background theme).
-  const { fontScale, theme, bgColor, textColor } = useReaderSettings();
+  // Reader appearance settings (font size, background theme) + narrator prefs.
+  const {
+    fontScale, theme, bgColor, textColor,
+    narratorVoice, narratorRate, setNarratorVoice, setNarratorRate,
+  } = useReaderSettings();
   const { bg, text } = getThemeColors({ theme, bgColor, textColor });
   const singleColumn = fontScale >= SINGLE_COLUMN_SCALE;
 
@@ -211,6 +214,22 @@ const ReadingPage = () => {
   }, [id, roomId, roomMode, navigate]);
 
   const pages = useMemo(() => chaptersToPages(chapters), [chapters]);
+
+  // --- Narrator (text-to-speech) for the current page ---
+  const narrator = useNarrator({
+    pageLeft: pages[currentPage]?.left || '',
+    pageRight: pages[currentPage]?.right || '',
+    voiceId: narratorVoice,
+    rate: narratorRate || 1,
+  });
+  const effectiveVoiceId = (narratorVoice && narrator.voices.some((v) => v.id === narratorVoice))
+    ? narratorVoice
+    : (narrator.voices[0]?.id || '');
+  const narratorToggle = () => {
+    if (narrator.status === 'idle') narrator.play(0);
+    else if (narrator.status === 'playing') narrator.pause();
+    else narrator.resume();
+  };
 
   const queueProgress = (progress, pageIndex) => {
     if (progress === lastProgressRef.current) return;
@@ -407,8 +426,33 @@ const ReadingPage = () => {
   // Click on a highlight: room highlights open their discussion thread; private
   // highlights open the note editor.
   const onAnnClick = (ann) => {
+    if (ann?._narration) return; // transient narrator highlight, not clickable
     if (ann?.room) openThread(ann);
     else openEditor(ann);
+  };
+
+  // Click-to-start: while the narrator is active, a plain click on the text
+  // begins narration from the word at the click point.
+  const handleNarrationClick = (e) => {
+    if (narrator.status === 'idle') return; // let the normal reader tap handler run
+    e.stopPropagation();
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) return; // a real text selection, leave it alone
+    const colEl = leftRef.current?.contains(e.target) ? leftRef.current
+      : rightRef.current?.contains(e.target) ? rightRef.current : null;
+    if (!colEl) return;
+    let node = null;
+    let offsetInNode = 0;
+    if (document.caretRangeFromPoint) {
+      const r = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if (r) { node = r.startContainer; offsetInNode = r.startOffset; }
+    } else if (document.caretPositionFromPoint) {
+      const p = document.caretPositionFromPoint(e.clientX, e.clientY);
+      if (p) { node = p.offsetNode; offsetInNode = p.offset; }
+    }
+    if (!node) return;
+    const offset = getTextOffset(colEl, node, offsetInNode);
+    narrator.playFromOffset(colEl === leftRef.current ? 'left' : 'right', offset);
   };
 
   const openEditor = (ann) => {
@@ -500,29 +544,7 @@ const ReadingPage = () => {
   };
 
   // --- Invite ---
-  const handleInvite = async () => {
-    try {
-      const res = await listFriends();
-      const friends = res?.data || [];
-      if (!friends.length) { toast.show('Add friends first to invite them.'); return; }
-      const names = friends.map((f, i) => `${i + 1}. ${f.name}`).join('\n');
-      const pick = window.prompt(`Invite a friend by number:\n${names}`);
-      const idx = Number(pick) - 1;
-      if (Number.isInteger(idx) && friends[idx]) {
-        await inviteFriend(roomId, friends[idx].id);
-        toast.success(`Invited ${friends[idx].name}`);
-      }
-    } catch (err) { toast.error(err?.message || 'Failed to invite'); }
-  };
-
-  const copyInviteLink = () => {
-    if (!room?.joinCode) return;
-    const url = `${window.location.origin}/rooms/${room.id}/read`;
-    navigator.clipboard?.writeText(`${url}\nInvite code: ${room.joinCode}`).then(
-      () => toast.success('Invite link copied'),
-      () => toast.show(`Invite code: ${room.joinCode}`),
-    );
-  };
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   if (loading) {
     return <div className="px-6 py-6 text-sm text-gray-500"><Spinner label="Loading book…" /></div>;
@@ -537,6 +559,15 @@ const ReadingPage = () => {
   const page = pages[currentPage];
   const leftAnns = annotations.filter((a) => a.page_index === currentPage && a.column === 'left');
   const rightAnns = annotations.filter((a) => a.page_index === currentPage && a.column === 'right');
+
+  // Karaoke highlight: the word the narrator is currently speaking is rendered
+  // as a transient highlight through the same machinery as annotations.
+  const spoken = narrator.currentWord;
+  const spokenMark = spoken
+    ? { start_offset: spoken.start, end_offset: spoken.end, color: 'rgba(91,124,153,0.45)', _narration: true }
+    : null;
+  const leftRender = spokenMark && spoken.column === 'left' ? [...leftAnns, spokenMark] : leftAnns;
+  const rightRender = spokenMark && spoken.column === 'right' ? [...rightAnns, spokenMark] : rightAnns;
 
   const closeRoomPanels = () => { setMembersOpen(false); setChatOpen(false); setThreadHighlight(null); };
 
@@ -628,13 +659,13 @@ const ReadingPage = () => {
             className={`flex-1 ${singleColumn ? 'max-w-2xl' : 'max-w-4xl'} mx-auto grid grid-cols-1 ${singleColumn ? '' : 'lg:grid-cols-2'} gap-6 lg:gap-12 h-full overflow-y-auto px-2 sm:px-4 animate-page-turn`}
           >
             <div>
-              <p ref={leftRef} className="whitespace-pre-line text-justify text-current" style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}>
-                {renderWithHighlights(page.left, leftAnns, onAnnClick)}
+              <p ref={leftRef} onClick={handleNarrationClick} className="whitespace-pre-line text-justify text-current" style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}>
+                {renderWithHighlights(page.left, leftRender, onAnnClick)}
               </p>
             </div>
             <div>
-              <p ref={rightRef} className="whitespace-pre-line text-justify text-current" style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}>
-                {renderWithHighlights(page.right, rightAnns, onAnnClick)}
+              <p ref={rightRef} onClick={handleNarrationClick} className="whitespace-pre-line text-justify text-current" style={{ fontSize: `${15 * fontScale}px`, lineHeight: 1.8 }}>
+                {renderWithHighlights(page.right, rightRender, onAnnClick)}
               </p>
             </div>
           </div>
@@ -671,7 +702,23 @@ const ReadingPage = () => {
         </footer>
       </div>
 
-      <ReaderSettingsPanel isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <ReaderSettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        narrator={{
+          supported: narrator.supported,
+          voices: narrator.voices,
+          status: narrator.status,
+          voiceId: effectiveVoiceId,
+          rate: narratorRate || 1,
+          onToggle: narratorToggle,
+          onPrev: narrator.prev,
+          onNext: narrator.next,
+          onStop: narrator.stop,
+          onVoiceChange: setNarratorVoice,
+          onRateChange: setNarratorRate,
+        }}
+      />
 
       <GeminiAskPanel
         isOpen={!!geminiText}
@@ -689,10 +736,20 @@ const ReadingPage = () => {
             onlineIds={onlineIds}
             currentUserId={user?.id}
             onJumpTo={(p) => goToPage(p)}
-            onInvite={room?.joinCode ? copyInviteLink : handleInvite}
+            onInvite={() => setInviteOpen(true)}
             onClose={() => setMembersOpen(false)}
           />
         </>
+      )}
+
+      {/* Invite friends / copy code */}
+      {roomMode && inviteOpen && (
+        <InviteFriendsModal
+          roomId={roomId}
+          joinCode={room?.joinCode}
+          roomType={room?.type}
+          onClose={() => setInviteOpen(false)}
+        />
       )}
 
       {/* Room chat panel */}

@@ -4,6 +4,7 @@ import { useToast } from './ToastContext';
 import { getEcho } from '../lib/echo';
 import { listFriendRequests } from '../api/friends';
 import { getInbox } from '../api/messages';
+import { listRoomInvitations } from '../api/roomInvitations';
 
 const NotificationsContext = createContext(null);
 
@@ -12,6 +13,7 @@ export function NotificationsProvider({ children }) {
   const toast = useToast();
 
   const [requests, setRequests] = useState([]);
+  const [invitations, setInvitations] = useState([]);
   const [unreadTotal, setUnreadTotal] = useState(0);
 
   // Listeners that want raw incoming direct messages (e.g. the open chat thread).
@@ -35,6 +37,15 @@ export function NotificationsProvider({ children }) {
     }
   }, []);
 
+  const refreshInvitations = useCallback(async () => {
+    try {
+      const res = await listRoomInvitations();
+      setInvitations(res.data || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const subscribeDM = useCallback((fn) => {
     dmListeners.current.add(fn);
     return () => dmListeners.current.delete(fn);
@@ -45,16 +56,23 @@ export function NotificationsProvider({ children }) {
     setRequests((prev) => prev.filter((r) => r.requestId !== requestId));
   }, []);
 
+  // Locally remove an invitation once joined or dismissed.
+  const removeInvitation = useCallback((id) => {
+    setInvitations((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
   // Initial load + live subscription, tied to the logged-in user.
   useEffect(() => {
     if (!user?.id) {
       setRequests([]);
+      setInvitations([]);
       setUnreadTotal(0);
       return;
     }
 
     refreshRequests();
     refreshUnread();
+    refreshInvitations();
 
     const echo = getEcho();
     const channel = echo.private(`user.${user.id}`);
@@ -88,24 +106,42 @@ export function NotificationsProvider({ children }) {
 
     channel.listen('.room.invite', (payload) => {
       const who = payload.from?.name || 'A friend';
-      const room = payload.name || 'a reading room';
-      const code = payload.joinCode ? ` (code: ${payload.joinCode})` : '';
-      toast.show(`${who} invited you to “${room}”${code} — open Reading Rooms to join`);
+      const room = payload.name || 'a room';
+      // Surface as a persistent, clickable invitation in the bell (de-duped).
+      if (payload.invitationId) {
+        setInvitations((prev) => {
+          if (prev.some((i) => i.id === payload.invitationId)) return prev;
+          return [
+            {
+              id: payload.invitationId,
+              room: { id: payload.roomId, name: payload.name, type: payload.type },
+              from: payload.from,
+              createdAt: new Date().toISOString(),
+            },
+            ...prev,
+          ];
+        });
+      }
+      toast.show(`${who} invited you to “${room}” — open notifications to join`);
     });
 
     return () => {
       echo.leave(`user.${user.id}`);
     };
-  }, [user?.id, refreshRequests, refreshUnread, toast]);
+  }, [user?.id, refreshRequests, refreshUnread, refreshInvitations, toast]);
 
   const value = {
     requests,
     requestCount: requests.length,
+    invitations,
+    invitationCount: invitations.length,
     unreadTotal,
     setUnreadTotal,
     refreshRequests,
     refreshUnread,
+    refreshInvitations,
     removeRequest,
+    removeInvitation,
     subscribeDM,
   };
 

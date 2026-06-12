@@ -10,14 +10,30 @@ class Book extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING  = 'pending';
+    public const STATUS_APPROVED = 'approved';
+    public const STATUS_REJECTED = 'rejected';
+
     protected $fillable = [
         'title', 'author', 'description', 'cover_image_url',
         'genre', 'producer', 'release_status', 'bestseller_tag',
         'average_rating', 'published_year', 'gutenberg_id', 'is_exclusive',
-        'author_id', 'source',
+        'author_id', 'source', 'status', 'approved_at', 'approved_by', 'rejection_reason',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     protected $appends = ['is_bookmarked', 'is_favorited'];
+
+    /**
+     * Limit a query to books readers are allowed to see (publicly listed).
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
 
     public function content()
     {
@@ -27,6 +43,11 @@ class Book extends Model
     public function authorUser()
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function reviews()

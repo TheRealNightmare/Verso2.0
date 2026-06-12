@@ -7,6 +7,7 @@ use App\Events\RoomInviteSent;
 use App\Http\Controllers\Concerns\RoomMembership;
 use App\Models\ReadingRoom;
 use App\Models\ReadingRoomMember;
+use App\Models\RoomInvitation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -200,11 +201,24 @@ class ReadingRoomController extends Controller
             abort(422, 'You can only invite friends.');
         }
 
+        if ($room->isMember($inviteeId)) {
+            abort(422, 'This person is already a member.');
+        }
+
+        // Persist (or reset a previously-declined invite) so it survives reloads
+        // and shows up as a clickable notification.
+        $invitation = RoomInvitation::updateOrCreate(
+            ['room_id' => $room->id, 'invitee_id' => $inviteeId],
+            ['inviter_id' => $me->id, 'status' => 'pending'],
+        );
+
         broadcast(new RoomInviteSent($inviteeId, [
-            'roomId'   => $room->id,
-            'name'     => $room->name,
-            'joinCode' => $room->join_code,
-            'from'     => [
+            'invitationId' => $invitation->id,
+            'roomId'       => $room->id,
+            'type'         => $room->type,
+            'name'         => $room->name,
+            'joinCode'     => $room->join_code,
+            'from'         => [
                 'id'        => $me->id,
                 'name'      => $me->name,
                 'avatarUrl' => $me->avatar_url,
@@ -262,30 +276,6 @@ class ReadingRoomController extends Controller
 
     // --- helpers -----------------------------------------------------------
 
-    private function addMember(ReadingRoom $room, int $userId): JsonResponse
-    {
-        $existing = $room->memberFor($userId);
-        if ($existing) {
-            $room->load('book:id,title,author,cover_image_url');
-            return response()->json($this->shapeRoom($room, $userId));
-        }
-
-        ReadingRoomMember::create([
-            'room_id'         => $room->id,
-            'user_id'         => $userId,
-            'role'            => 'member',
-            'highlight_color' => $this->nextHighlightColor($room),
-            'joined_at'       => now(),
-        ]);
-        $room->increment('member_count');
-
-        $member = $room->memberFor($userId)->load('user:id,name,avatar_url');
-        broadcast(new RoomBroadcast($room->id, 'member.joined', $this->shapeMember($member)));
-
-        $room->load('book:id,title,author,cover_image_url');
-        return response()->json($this->shapeRoom($room, $userId), 201);
-    }
-
     private function freshJoinCode(): string
     {
         do {
@@ -293,35 +283,6 @@ class ReadingRoomController extends Controller
         } while (ReadingRoom::where('join_code', $code)->exists());
 
         return $code;
-    }
-
-    private function shapeRoom(ReadingRoom $room, int $userId): array
-    {
-        $isOwner  = $room->owner_id === $userId;
-        $isMember = $room->isMember($userId);
-        // Owners always see the code; chat rooms also expose it to any member so
-        // anyone can share the invite link. Reading rooms stay owner-only.
-        $showCode = $isOwner || ($room->type === 'chat' && $isMember);
-
-        return [
-            'id'          => $room->id,
-            'bookId'      => $room->book_id,
-            'type'        => $room->type,
-            'name'        => $room->name,
-            'description' => $room->description,
-            'visibility'  => $room->visibility,
-            'joinCode'    => $showCode ? $room->join_code : null,
-            'memberCount' => $room->member_count,
-            'isOwner'     => $isOwner,
-            'isMember'    => $isMember,
-            'book'        => $room->book ? [
-                'id'       => $room->book->id,
-                'title'    => $room->book->title,
-                'author'   => $room->book->author,
-                'coverUrl' => $room->book->cover_image_url,
-            ] : null,
-            'updatedAt'   => $room->updated_at?->toIso8601String(),
-        ];
     }
 
     private function shapeMembership(?ReadingRoomMember $m): ?array
@@ -333,18 +294,6 @@ class ReadingRoomController extends Controller
             'role'           => $m->role,
             'highlightColor' => $m->highlight_color,
             'lastPage'       => $m->last_page,
-        ];
-    }
-
-    private function shapeMember(ReadingRoomMember $m): array
-    {
-        return [
-            'userId'    => $m->user_id,
-            'name'      => $m->user?->name,
-            'avatarUrl' => $m->user?->avatar_url,
-            'color'     => $m->highlight_color,
-            'role'      => $m->role,
-            'lastPage'  => $m->last_page,
         ];
     }
 }

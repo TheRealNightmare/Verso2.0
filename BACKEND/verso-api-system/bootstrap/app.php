@@ -16,7 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         attributes: ['middleware' => ['auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'banned' => \App\Http\Middleware\CheckBanned::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

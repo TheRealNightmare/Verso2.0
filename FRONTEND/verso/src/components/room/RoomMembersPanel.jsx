@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, UserPlus, CornerDownRight, UserMinus, Link2 } from 'lucide-react';
+import { X, UserPlus, CornerDownRight, UserMinus } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
 // Roster for a room: avatars color-coded by each member's highlight color, their
@@ -16,11 +16,8 @@ const RoomMembersPanel = ({
   showLocation = true,
   canManage = false,
   onKick,
-  inviteLabel = 'Invite a friend',
-  inviteIcon = 'user',
 }) => {
   const online = onlineIds || new Set();
-  const InviteIcon = inviteIcon === 'link' ? Link2 : UserPlus;
 
   return (
     <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-[#b8c5d6] flex flex-col shadow-xl lg:static lg:z-auto lg:w-72 lg:max-w-none lg:shadow-none">
@@ -35,7 +32,7 @@ const RoomMembersPanel = ({
         onClick={onInvite}
         className="mx-4 mb-3 inline-flex items-center justify-center gap-2 rounded-lg bg-[#5b7c99] px-3 py-2 text-sm font-medium text-white hover:bg-[#4a6884]"
       >
-        <InviteIcon size={16} /> {inviteLabel}
+        <UserPlus size={16} /> Invite
       </button>
 
       <div className="flex-1 overflow-y-auto px-3 pb-6 flex flex-col gap-1.5">

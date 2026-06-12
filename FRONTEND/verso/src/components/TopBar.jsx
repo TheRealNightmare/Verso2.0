@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Check, X, Menu } from 'lucide-react';
+import { Search, Bell, Check, X, Menu, DoorOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { useNotifications } from '../context/NotificationsContext';
@@ -9,6 +9,7 @@ import Avatar from './ui/Avatar';
 import { fetchBooks } from '../api/books';
 import { searchUsers } from '../api/users';
 import { acceptFriendRequest, declineFriendRequest } from '../api/friends';
+import { acceptRoomInvitation, declineRoomInvitation } from '../api/roomInvitations';
 import { resolveFileUrl } from '../lib/assets';
 
 const TopBar = ({ onMenuClick = () => {} }) => {
@@ -16,7 +17,9 @@ const TopBar = ({ onMenuClick = () => {} }) => {
   const confirm = useConfirm();
   const toast = useToast();
   const navigate = useNavigate();
-  const { requests, requestCount, removeRequest } = useNotifications();
+  const { requests, requestCount, removeRequest, invitations, invitationCount, removeInvitation } =
+    useNotifications();
+  const notifCount = requestCount + invitationCount;
 
   const [query, setQuery] = useState('');
   const [books, setBooks] = useState([]);
@@ -118,6 +121,28 @@ const TopBar = ({ onMenuClick = () => {} }) => {
       removeRequest(requestId);
     } catch {
       toast.error('Could not decline request.');
+    }
+  };
+
+  // Accept a room invite: join, then open the room (reading vs chat route).
+  const handleJoinRoom = async (invite) => {
+    try {
+      await acceptRoomInvitation(invite.id);
+      removeInvitation(invite.id);
+      setBellOpen(false);
+      const room = invite.room || {};
+      navigate(room.type === 'chat' ? '/community' : `/rooms/${room.id}/read`);
+    } catch {
+      toast.error('Could not join the room.');
+    }
+  };
+
+  const handleDismissInvite = async (id) => {
+    try {
+      await declineRoomInvitation(id);
+      removeInvitation(id);
+    } catch {
+      toast.error('Could not dismiss invitation.');
     }
   };
 
@@ -255,60 +280,106 @@ const TopBar = ({ onMenuClick = () => {} }) => {
         <div className="relative" ref={bellRef}>
           <button
             type="button"
-            aria-label="Friend requests"
+            aria-label="Notifications"
             onClick={() => setBellOpen((v) => !v)}
             className="relative p-2 rounded-full text-slate-600 hover:bg-slate-100"
           >
             <Bell size={20} />
-            {requestCount > 0 && (
+            {notifCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                {requestCount}
+                {notifCount}
               </span>
             )}
           </button>
 
           {bellOpen && (
             <div className="absolute right-0 top-full mt-1 w-80 max-w-[calc(100vw-1.5rem)] bg-white rounded-xl shadow-lg border border-slate-200 z-50 overflow-hidden">
-              <p className="px-4 py-3 text-sm font-semibold text-slate-700 border-b border-slate-100">
-                Friend requests
-              </p>
-              {requestCount === 0 ? (
-                <p className="px-4 py-6 text-center text-xs text-slate-400">No pending requests.</p>
-              ) : (
-                <ul className="max-h-80 overflow-y-auto">
-                  {requests.map((r) => (
-                    <li key={r.requestId} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBellOpen(false);
-                          navigate(`/users/${r.user.id}`);
-                        }}
-                        className="shrink-0"
-                      >
-                        <Avatar src={r.user.avatarUrl} name={r.user.name} className="w-9 h-9" textClass="text-xs" />
-                      </button>
-                      <p className="flex-1 min-w-0 text-sm text-slate-700 truncate">{r.user.name}</p>
-                      <button
-                        type="button"
-                        aria-label="Accept"
-                        onClick={() => handleAccept(r.requestId, r.user.name)}
-                        className="p-1.5 rounded-lg bg-[#5b7c99] text-white hover:bg-[#4a6a85]"
-                      >
-                        <Check size={15} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Decline"
-                        onClick={() => handleDecline(r.requestId)}
-                        className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
-                      >
-                        <X size={15} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="max-h-96 overflow-y-auto">
+                {notifCount === 0 && (
+                  <p className="px-4 py-6 text-center text-xs text-slate-400">No notifications.</p>
+                )}
+
+                {invitationCount > 0 && (
+                  <>
+                    <p className="px-4 py-3 text-sm font-semibold text-slate-700 border-b border-slate-100">
+                      Room invites
+                    </p>
+                    <ul>
+                      {invitations.map((inv) => (
+                        <li key={`inv-${inv.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+                          <Avatar
+                            src={inv.from?.avatarUrl}
+                            name={inv.from?.name}
+                            className="w-9 h-9 shrink-0"
+                            textClass="text-xs"
+                          />
+                          <p className="flex-1 min-w-0 text-sm text-slate-700">
+                            <span className="font-medium">{inv.from?.name || 'A friend'}</span>
+                            {' invited you to '}
+                            <span className="font-medium">“{inv.room?.name}”</span>
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleJoinRoom(inv)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#5b7c99] text-white text-xs font-medium hover:bg-[#4a6a85]"
+                          >
+                            <DoorOpen size={14} /> Join
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Dismiss invitation"
+                            onClick={() => handleDismissInvite(inv.id)}
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
+                          >
+                            <X size={15} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {requestCount > 0 && (
+                  <>
+                    <p className="px-4 py-3 text-sm font-semibold text-slate-700 border-b border-slate-100">
+                      Friend requests
+                    </p>
+                    <ul>
+                      {requests.map((r) => (
+                        <li key={r.requestId} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBellOpen(false);
+                              navigate(`/users/${r.user.id}`);
+                            }}
+                            className="shrink-0"
+                          >
+                            <Avatar src={r.user.avatarUrl} name={r.user.name} className="w-9 h-9" textClass="text-xs" />
+                          </button>
+                          <p className="flex-1 min-w-0 text-sm text-slate-700 truncate">{r.user.name}</p>
+                          <button
+                            type="button"
+                            aria-label="Accept"
+                            onClick={() => handleAccept(r.requestId, r.user.name)}
+                            className="p-1.5 rounded-lg bg-[#5b7c99] text-white hover:bg-[#4a6a85]"
+                          >
+                            <Check size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Decline"
+                            onClick={() => handleDecline(r.requestId)}
+                            className="p-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200"
+                          >
+                            <X size={15} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

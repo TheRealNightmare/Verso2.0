@@ -73,6 +73,7 @@ class AuthorBookController extends Controller
                 'is_exclusive'    => (bool) ($validated['is_exclusive'] ?? false),
                 'author_id'       => $user->id,
                 'source'          => 'author',
+                'status'          => Book::STATUS_PENDING, // awaits admin approval before going public
             ]);
 
             BookContent::create([
