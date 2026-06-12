@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'role', 'avatar_url', 'date_of_birth', 'gender', 'bio', 'banner_color', 'points', 'last_seen_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'avatar_url', 'date_of_birth', 'gender', 'bio', 'banner_color', 'points', 'last_seen_at', 'banned_at', 'ban_reason'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,7 +30,13 @@ class User extends Authenticatable
             'password' => 'hashed',
             'date_of_birth' => 'date:Y-m-d',
             'last_seen_at' => 'datetime',
+            'banned_at' => 'datetime',
         ];
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->banned_at !== null;
     }
 
     public function readerPreference()

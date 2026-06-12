@@ -61,7 +61,17 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user  = Auth::user();
+        $user = Auth::user();
+
+        if ($user->isBanned()) {
+            Auth::logout();
+            return response()->json([
+                'message' => $user->ban_reason
+                    ? 'Your account has been banned: '.$user->ban_reason
+                    : 'Your account has been banned.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
