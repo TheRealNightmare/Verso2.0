@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Events\RoomBroadcast;
 use App\Models\ReadingRoom;
 use App\Models\ReadingRoomMember;
+use Illuminate\Http\JsonResponse;
 
 trait RoomMembership
 {
@@ -51,5 +53,74 @@ trait RoomMembership
         }
         // Palette exhausted — cycle deterministically by member count.
         return self::ROOM_COLORS[$room->members()->count() % count(self::ROOM_COLORS)];
+    }
+
+    /**
+     * Add a user to a room (idempotent). Returns the shaped room as JSON so
+     * callers can hand it straight back to the client.
+     */
+    protected function addMember(ReadingRoom $room, int $userId): JsonResponse
+    {
+        $existing = $room->memberFor($userId);
+        if ($existing) {
+            $room->load('book:id,title,author,cover_image_url');
+            return response()->json($this->shapeRoom($room, $userId));
+        }
+
+        ReadingRoomMember::create([
+            'room_id'         => $room->id,
+            'user_id'         => $userId,
+            'role'            => 'member',
+            'highlight_color' => $this->nextHighlightColor($room),
+            'joined_at'       => now(),
+        ]);
+        $room->increment('member_count');
+
+        $member = $room->memberFor($userId)->load('user:id,name,avatar_url');
+        broadcast(new RoomBroadcast($room->id, 'member.joined', $this->shapeMember($member)));
+
+        $room->load('book:id,title,author,cover_image_url');
+        return response()->json($this->shapeRoom($room, $userId), 201);
+    }
+
+    protected function shapeMember(ReadingRoomMember $m): array
+    {
+        return [
+            'userId'    => $m->user_id,
+            'name'      => $m->user?->name,
+            'avatarUrl' => $m->user?->avatar_url,
+            'color'     => $m->highlight_color,
+            'role'      => $m->role,
+            'lastPage'  => $m->last_page,
+        ];
+    }
+
+    protected function shapeRoom(ReadingRoom $room, int $userId): array
+    {
+        $isOwner  = $room->owner_id === $userId;
+        $isMember = $room->isMember($userId);
+        // Owners always see the code; chat rooms also expose it to any member so
+        // anyone can share the invite link. Reading rooms stay owner-only.
+        $showCode = $isOwner || ($room->type === 'chat' && $isMember);
+
+        return [
+            'id'          => $room->id,
+            'bookId'      => $room->book_id,
+            'type'        => $room->type,
+            'name'        => $room->name,
+            'description' => $room->description,
+            'visibility'  => $room->visibility,
+            'joinCode'    => $showCode ? $room->join_code : null,
+            'memberCount' => $room->member_count,
+            'isOwner'     => $isOwner,
+            'isMember'    => $isMember,
+            'book'        => $room->book ? [
+                'id'       => $room->book->id,
+                'title'    => $room->book->title,
+                'author'   => $room->book->author,
+                'coverUrl' => $room->book->cover_image_url,
+            ] : null,
+            'updatedAt'   => $room->updated_at?->toIso8601String(),
+        ];
     }
 }

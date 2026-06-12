@@ -21,6 +21,7 @@ use App\Http\Controllers\ReaderAssistantController;
 use App\Http\Controllers\ReaderPreferenceController;
 use App\Http\Controllers\ReadingRoomController;
 use App\Http\Controllers\RoomAnnotationController;
+use App\Http\Controllers\RoomInvitationController;
 use App\Http\Controllers\RoomAnnotationCommentController;
 use App\Http\Controllers\RoomMessageController;
 use App\Http\Controllers\DirectMessageController;
@@ -47,7 +48,7 @@ Route::get('/books/{bookId}/reviews', [ReviewController::class, 'index']);
 Route::get('/meta/genders', [MetaController::class, 'genders']);
 Route::get('/meta/event-categories', [MetaController::class, 'eventCategories']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'banned'])->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -145,6 +146,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post  ('/reading-rooms/{room}/invite',   [ReadingRoomController::class, 'invite']);
     Route::delete('/reading-rooms/{room}/members/{userId}', [ReadingRoomController::class, 'removeMember']);
     Route::post  ('/reading-rooms/{room}/progress', [ReadingRoomController::class, 'updateProgress']);
+
+    // Room invitations (persistent, clickable notifications)
+    Route::get ('/room-invitations',              [RoomInvitationController::class, 'index']);
+    Route::post('/room-invitations/{id}/accept',  [RoomInvitationController::class, 'accept']);
+    Route::post('/room-invitations/{id}/decline', [RoomInvitationController::class, 'decline']);
 
     // Room shared highlights
     Route::get   ('/reading-rooms/{room}/highlights', [RoomAnnotationController::class, 'index']);

@@ -4,6 +4,7 @@ import CommunityMessageItem from './CommunityMessageItem';
 import MessageComposer from './MessageComposer';
 import RoomMembersPanel from '../room/RoomMembersPanel';
 import RoomSettingsModal from '../room/RoomSettingsModal';
+import InviteFriendsModal from '../room/InviteFriendsModal';
 import {
   getRoom,
   listRoomMessages,
@@ -38,6 +39,7 @@ const ChatRoomView = ({ roomId, onExit }) => {
   const [error, setError] = useState(null);
   const [membersOpen, setMembersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const feedEndRef = useRef(null);
   const userIdRef = useRef(user?.id);
@@ -185,16 +187,6 @@ const ChatRoomView = ({ roomId, onExit }) => {
     } catch (e) { toast.error(e?.message || 'Failed to remove member'); }
   };
 
-  // Mirrors the reading room's copyInviteLink: copy a shareable link + the code.
-  const copyInviteLink = () => {
-    if (!room?.joinCode) { toast.error('No invite code available yet.'); return; }
-    const text = `${window.location.origin}/community\nInvite code: ${room.joinCode}`;
-    navigator.clipboard?.writeText(text).then(
-      () => toast.success('Invite link copied'),
-      () => toast.show(`Invite code: ${room.joinCode}`),
-    );
-  };
-
   const handleLeave = async () => {
     const ok = await confirm({ title: 'Leave this room?', message: 'You can rejoin later with an invite code.', confirmLabel: 'Leave', danger: true });
     if (!ok) return;
@@ -272,13 +264,11 @@ const ChatRoomView = ({ roomId, onExit }) => {
             members={members}
             onlineIds={onlineIds}
             currentUserId={user?.id}
-            onInvite={copyInviteLink}
+            onInvite={() => setInviteOpen(true)}
             onClose={() => setMembersOpen(false)}
             showLocation={false}
             canManage={isOwner}
             onKick={handleKick}
-            inviteLabel="Copy invite link"
-            inviteIcon="link"
           />
         </>
       )}
@@ -289,6 +279,15 @@ const ChatRoomView = ({ roomId, onExit }) => {
           onClose={() => setSettingsOpen(false)}
           onUpdated={(updated) => setRoom((prev) => ({ ...prev, ...updated }))}
           onDeleted={() => { setSettingsOpen(false); onExit?.(); }}
+        />
+      )}
+
+      {inviteOpen && room && (
+        <InviteFriendsModal
+          roomId={roomId}
+          joinCode={room.joinCode}
+          roomType="chat"
+          onClose={() => setInviteOpen(false)}
         />
       )}
     </div>
