@@ -18,13 +18,13 @@ class BookController extends Controller
         $payload = Cache::remember('books.home', 300, function () {
             $hidden = ['is_bookmarked', 'is_favorited'];
 
-            $latest = Book::orderBy('created_at', 'desc')->limit(10)->get()->makeHidden($hidden);
+            $latest = Book::approved()->orderBy('created_at', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-            $recommended = Book::orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
+            $recommended = Book::approved()->orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-            $exclusive = Book::where('is_exclusive', true)->orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
+            $exclusive = Book::approved()->where('is_exclusive', true)->orderBy('average_rating', 'desc')->limit(10)->get()->makeHidden($hidden);
 
-            $highlyRated = Book::has('reviews', '>=', 3)
+            $highlyRated = Book::approved()->has('reviews', '>=', 3)
                 ->orderBy('average_rating', 'desc')
                 ->limit(10)
                 ->get()
@@ -36,7 +36,7 @@ class BookController extends Controller
                 ->limit(10)
                 ->pluck('book_id');
 
-            $favorites = Book::whereIn('id', $topFavoriteBookIds)->get()->makeHidden($hidden);
+            $favorites = Book::approved()->whereIn('id', $topFavoriteBookIds)->get()->makeHidden($hidden);
 
             // Return plain arrays (not Eloquent collections) so the cached
             // payload serializes cleanly under the database cache driver. Cached
@@ -57,7 +57,7 @@ class BookController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Book::query();
+        $query = Book::approved();
 
         if ($request->filled('search')) {
             $term = $request->search;
@@ -74,18 +74,28 @@ class BookController extends Controller
         return response()->json($query->orderBy('created_at', 'desc')->paginate(20));
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         $book = Book::withCount('reviews')
             ->with(['reviews.user:id,name,avatar_url', 'authorUser:id,name,avatar_url'])
             ->findOrFail($id);
+
+        // Non-approved books are only visible to their author or an admin.
+        if ($book->status !== Book::STATUS_APPROVED) {
+            $viewer = $request->user();
+            $canView = $viewer && ($viewer->id === $book->author_id || $viewer->role === 'admin');
+            if (! $canView) {
+                abort(404);
+            }
+        }
 
         return response()->json($book);
     }
 
     public function byAuthor(int $userId): JsonResponse
     {
-        $books = Book::where('author_id', $userId)
+        $books = Book::approved()
+            ->where('author_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
 
