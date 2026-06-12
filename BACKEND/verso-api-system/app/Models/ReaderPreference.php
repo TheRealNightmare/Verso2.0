@@ -17,11 +17,14 @@ class ReaderPreference extends Model
         'text_color',
         'asmr_track',
         'asmr_volume',
+        'narrator_voice',
+        'narrator_rate',
     ];
 
     protected $casts = [
         'font_scale' => 'float',
         'asmr_volume' => 'integer',
+        'narrator_rate' => 'float',
     ];
 
     public function user()

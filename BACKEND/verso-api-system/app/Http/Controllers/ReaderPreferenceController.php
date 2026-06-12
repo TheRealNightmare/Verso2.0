@@ -22,6 +22,8 @@ class ReaderPreferenceController extends Controller
             'text_color'  => ['sometimes', 'nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'asmr_track'  => ['sometimes', 'nullable', 'string', 'max:64'],
             'asmr_volume' => ['sometimes', 'integer', 'min:0', 'max:100'],
+            'narrator_voice' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'narrator_rate'  => ['sometimes', 'numeric', 'min:0.5', 'max:2'],
         ]);
 
         $pref = ReaderPreference::updateOrCreate(
@@ -41,6 +43,8 @@ class ReaderPreferenceController extends Controller
             'textColor'  => $pref?->text_color,
             'asmrTrack'  => $pref?->asmr_track,
             'asmrVolume' => $pref?->asmr_volume ?? 60,
+            'narratorVoice' => $pref?->narrator_voice,
+            'narratorRate'  => $pref?->narrator_rate !== null ? (float) $pref->narrator_rate : 1.0,
         ];
     }
 }

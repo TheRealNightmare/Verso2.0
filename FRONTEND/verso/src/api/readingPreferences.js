@@ -1,8 +1,9 @@
 import { apiFetch } from './auth';
 
-// Reader settings (font size, background theme, ASMR audio) synced to the user's
-// account. Shaped server-side with camelCase keys:
-//   { fontScale, theme, bgColor, textColor, asmrTrack, asmrVolume }
+// Reader settings (font size, background theme, ASMR audio, narrator voice/speed)
+// synced to the user's account. Shaped server-side with camelCase keys:
+//   { fontScale, theme, bgColor, textColor, asmrTrack, asmrVolume,
+//     narratorVoice, narratorRate }
 
 export function getReadingPreferences() {
   return apiFetch('/reading-preferences');
@@ -17,6 +18,8 @@ export function updateReadingPreferences(partial) {
     textColor: 'text_color',
     asmrTrack: 'asmr_track',
     asmrVolume: 'asmr_volume',
+    narratorVoice: 'narrator_voice',
+    narratorRate: 'narrator_rate',
   };
   const body = {};
   for (const [key, value] of Object.entries(partial)) {

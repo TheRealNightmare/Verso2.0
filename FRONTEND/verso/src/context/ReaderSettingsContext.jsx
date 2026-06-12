@@ -17,10 +17,12 @@ const DEFAULTS = {
   textColor: null,
   asmrTrack: null,
   asmrVolume: 60,
+  narratorVoice: null,
+  narratorRate: 1,
 };
 
 // Only these keys are persisted/synced; isPlaying is session-local.
-const SYNC_KEYS = ['fontScale', 'theme', 'bgColor', 'textColor', 'asmrTrack', 'asmrVolume'];
+const SYNC_KEYS = ['fontScale', 'theme', 'bgColor', 'textColor', 'asmrTrack', 'asmrVolume', 'narratorVoice', 'narratorRate'];
 
 function loadLocal() {
   try {
@@ -170,6 +172,8 @@ export function ReaderSettingsProvider({ children }) {
     setAsmrVolume: (v) => update({ asmrVolume: v }),
     selectTrack,
     togglePlay,
+    setNarratorVoice: (uri) => update({ narratorVoice: uri }),
+    setNarratorRate: (v) => update({ narratorRate: v }),
   };
 
   return (

@@ -25,7 +25,32 @@ class ReaderPreferenceTest extends TestCase
             ->assertJsonPath('fontScale', 1)
             ->assertJsonPath('theme', 'light')
             ->assertJsonPath('asmrVolume', 60)
-            ->assertJsonStructure(['fontScale', 'theme', 'bgColor', 'textColor', 'asmrTrack', 'asmrVolume']);
+            ->assertJsonPath('narratorRate', 1)
+            ->assertJsonStructure(['fontScale', 'theme', 'bgColor', 'textColor', 'asmrTrack', 'asmrVolume', 'narratorVoice', 'narratorRate']);
+    }
+
+    public function test_persists_narrator_voice_and_rate(): void
+    {
+        $me = User::factory()->create();
+        Sanctum::actingAs($me);
+
+        $this->patchJson('/api/reading-preferences', [
+            'narrator_voice' => 'Google US English',
+            'narrator_rate'  => 1.25,
+        ])
+            ->assertOk()
+            ->assertJsonPath('narratorVoice', 'Google US English')
+            ->assertJsonPath('narratorRate', 1.25);
+
+        $this->assertDatabaseHas('reader_preferences', [
+            'user_id'        => $me->id,
+            'narrator_voice' => 'Google US English',
+            'narrator_rate'  => 1.25,
+        ]);
+
+        // Out-of-range rate is rejected.
+        $this->patchJson('/api/reading-preferences', ['narrator_rate' => 3])
+            ->assertStatus(422);
     }
 
     public function test_update_persists_and_reads_back(): void
